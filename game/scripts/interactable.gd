@@ -17,6 +17,11 @@ func _ready() -> void:
 func available() -> bool:
 	if once and used:
 		return false
+	if is_queued_for_deletion() or has_meta("retired"):
+		return false
+	var p := get_parent()
+	if p and (p.is_queued_for_deletion() or p.has_meta("retired")):
+		return false
 	if not is_visible_in_tree():
 		return false
 	if condition.is_valid() and not condition.call():

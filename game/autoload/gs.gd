@@ -370,6 +370,8 @@ func new_game() -> void:
 
 # ------------------------------------------------------------------ save
 func save_game() -> void:
+	if test_mode:
+		return
 	var data := {
 		"visit": visit, "fragments": fragments, "flags": flags, "scores": scores,
 		"xm": xm, "core_choices": core_choices, "dream_log": dream_log,
@@ -385,7 +387,7 @@ func has_save() -> bool:
 
 
 func load_game() -> bool:
-	if not has_save():
+	if test_mode or not has_save():
 		return false
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if f == null:
@@ -411,6 +413,8 @@ func load_game() -> bool:
 
 
 func delete_save() -> void:
+	if test_mode:
+		return
 	if has_save():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 

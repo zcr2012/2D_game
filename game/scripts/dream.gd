@@ -451,7 +451,13 @@ func add_breakable(p: Vector2, grid_cell := Vector2i(-1, -1)) -> Node2D:
 	return w
 
 
+## Stops a node's interactables from firing again (e.g. while it fades out).
+func retire(node: Node) -> void:
+	node.set_meta("retired", true)
+
+
 func break_wall(w: Node2D) -> void:
+	retire(w)
 	Audio.sfx("break")
 	shake(6.0)
 	breakables.erase(w)
@@ -474,7 +480,14 @@ func _build_maze() -> void:
 		for x in MW:
 			row.append(1)
 		maze.append(row)
-	# recursive backtracker on odd cells
+	# the clock tower room (cells x9-15, y7-11) is reserved before carving and
+	# walled in, with a single door on the far (north) side: the player has to
+	# walk all the way around -- or break a cracked wall with anger.
+	var in_room := func(c: Vector2i) -> bool:
+		return c.x >= 9 and c.x <= 15 and c.y >= 7 and c.y <= 11
+	var in_ring := func(c: Vector2i) -> bool:
+		return c.x >= 8 and c.x <= 16 and c.y >= 6 and c.y <= 12
+	# recursive backtracker on odd cells, around the room
 	var stack: Array = [Vector2i(1, 1)]
 	maze[1][1] = 0
 	while stack.size() > 0:
@@ -482,7 +495,7 @@ func _build_maze() -> void:
 		var nbs: Array = []
 		for d in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
 			var nx: Vector2i = cur + d
-			if nx.x > 0 and nx.x < MW - 1 and nx.y > 0 and nx.y < MH - 1 and maze[nx.y][nx.x] == 1:
+			if nx.x > 0 and nx.x < MW - 1 and nx.y > 0 and nx.y < MH - 1 and maze[nx.y][nx.x] == 1 and not in_room.call(nx):
 				nbs.append(d)
 		if nbs.is_empty():
 			stack.pop_back()
@@ -491,18 +504,19 @@ func _build_maze() -> void:
 		maze[cur.y + dd.y / 2][cur.x + dd.x / 2] = 0
 		maze[cur.y + dd.y][cur.x + dd.x] = 0
 		stack.append(cur + dd)
-	# some loops so it is less punishing
+	# a few loops so it is less punishing (never through the room's ring)
 	for y in range(1, MH - 1):
 		for x in range(1, MW - 1):
-			if maze[y][x] == 1 and rng.randf() < 0.1:
+			if maze[y][x] == 1 and not in_ring.call(Vector2i(x, y)) and rng.randf() < 0.08:
 				var horiz: bool = maze[y][x - 1] == 0 and maze[y][x + 1] == 0
 				var vert: bool = maze[y - 1][x] == 0 and maze[y + 1][x] == 0
 				if horiz != vert:
 					maze[y][x] = 0
 	# rooms: centre (clock tower), shop (NW), echo room (NE)
-	for y in range(6, 13):
+	for y in range(7, 12):
 		for x in range(9, 16):
 			maze[y][x] = 0
+	maze[6][13] = 0   # the only door, facing north
 	for y in range(1, 4):
 		for x in range(1, 4):
 			maze[y][x] = 0
@@ -523,7 +537,7 @@ func _build_maze() -> void:
 				astar.set_point_solid(Vector2i(x, y), true)
 
 	# path from start to the clock tower room (for lamps & footprints)
-	maze_path = astar.get_id_path(start, Vector2i(12, 12))
+	maze_path = astar.get_id_path(start, Vector2i(12, 9))
 
 	# breakable walls: interior walls between two floor cells
 	var candidates: Array = []
@@ -532,10 +546,10 @@ func _build_maze() -> void:
 			if maze[y][x] == 1:
 				var h: bool = maze[y][x - 1] == 0 and maze[y][x + 1] == 0
 				var v: bool = maze[y - 1][x] == 0 and maze[y + 1][x] == 0
-				if h != v:
+				if h != v and not in_ring.call(Vector2i(x, y)):
 					candidates.append(Vector2i(x, y))
-	var breakable_set := {}
-	for i in 6:
+	var breakable_set := {Vector2i(11, 12): true}
+	for i in 5:
 		if candidates.is_empty():
 			break
 		var c: Vector2i = candidates.pop_at(rng.randi_range(0, candidates.size() - 1))
@@ -766,7 +780,7 @@ func _far_cell() -> Vector2:
 	for i in 40:
 		var c := Vector2i(randi_range(1, MW - 2), randi_range(1, MH - 2))
 		if maze[c.y][c.x] == 0 and Vector2(c).distance_to(Vector2(11, 17)) > 7.0:
-			if c.x < 9 or c.x > 15 or c.y < 6 or c.y > 12:
+			if c.x < 8 or c.x > 16 or c.y < 6 or c.y > 12:
 				return cell_center(c)
 	return cell_center(Vector2i(1, 1))
 
@@ -907,7 +921,10 @@ func _run(fn: Callable) -> void:
 	busy = max(0, busy - 1)
 
 
+## For triggers (areas, timers): waits until no dialogue is running.
 func run_event(fn: Callable) -> void:
+	while Dialog.active or busy > 0:
+		await get_tree().process_frame
 	_run(fn)
 
 

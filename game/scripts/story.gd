@@ -179,7 +179,7 @@ func _pop_maze() -> void:
 	var area := Area2D.new()
 	var c := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
-	r.size = Vector2(7 * 48, 7 * 48)
+	r.size = Vector2(7 * 48, 5 * 48)
 	c.shape = r
 	area.position = Vector2(12 * 48 + 24, 9 * 48 + 24)
 	area.add_child(c)
@@ -549,6 +549,8 @@ func break_wall(w: Node2D) -> void:
 
 func glitch(key: String, node: Node2D) -> void:
 	var g: Dictionary = GLITCHES[key]
+	if node.has_meta("retired"):
+		return
 	Audio.sfx("glitch")
 	await Dialog.say("sys", "［%s］\n%s" % [g["title"], g["desc"]])
 	var i: int = await Dialog.choose("sys", "你要怎么处理这段数据？", [
@@ -559,6 +561,7 @@ func glitch(key: String, node: Node2D) -> void:
 	if i == 3:
 		return
 	var kind: String = ["repair", "protect", "enhance"][i]
+	d.retire(node)
 	GS.act(kind, "%s：%s" % [g["title"], ["修复", "保留", "增强"][i]])
 	match kind:
 		"repair":

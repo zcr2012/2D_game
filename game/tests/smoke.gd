@@ -198,10 +198,10 @@ func run() -> void:
 	await frames(5)
 	await wait_idle(d)
 	check(GS.stage() == "maze", "stage is maze")
-	check(d.maze_path.size() > 10, "maze path found (%d cells)" % d.maze_path.size())
+	check(d.maze_path.size() > 30, "maze path is long (%d cells)" % d.maze_path.size())
 	var on_path := {}
-	for c in d.maze_path:
-		on_path[c] = true
+	for mc in d.maze_path:
+		on_path[mc] = true
 	for y in d.MH:
 		var row := ""
 		for x in d.MW:
