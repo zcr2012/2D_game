@@ -1,0 +1,9 @@
+# Godot 4
+game/.godot/
+game/export_presets.cfg.bak
+*.tmp
+# build outputs
+game/build/
+exports/
+# python
+__pycache__/

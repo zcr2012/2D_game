@@ -1,0 +1,39 @@
+; Engine configuration file.
+; Dream Repair — Godot 4.3+
+
+config_version=5
+
+[application]
+
+config/name="梦境修复师 Dream Repair"
+config/description="2D exploration + puzzle + light RPG + AI narrative. Vertical slice: Candy City."
+run/main_scene="res://scenes/title.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GS="*res://autoload/gs.gd"
+Audio="*res://autoload/audio.gd"
+AI="*res://autoload/ai.gd"
+Dialog="*res://autoload/dialog.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/fusion-pixel-12px-proportional-sc.ttf"
+theme/default_font_antialiasing=0
+theme/default_font_hinting=0
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.09, 0.07, 0.16, 1)
