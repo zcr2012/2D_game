@@ -104,6 +104,30 @@ func _setup_input() -> void:
 	_add_keys("ask_xm", [KEY_Q])
 	_add_keys("fragments", [KEY_I])
 	_add_keys("pause", [KEY_ESCAPE])
+	# gamepad (Xbox / PlayStation / Switch Pro / Steam Deck)
+	_add_pad("move_up", [JOY_BUTTON_DPAD_UP], JOY_AXIS_LEFT_Y, -1.0)
+	_add_pad("move_down", [JOY_BUTTON_DPAD_DOWN], JOY_AXIS_LEFT_Y, 1.0)
+	_add_pad("move_left", [JOY_BUTTON_DPAD_LEFT], JOY_AXIS_LEFT_X, -1.0)
+	_add_pad("move_right", [JOY_BUTTON_DPAD_RIGHT], JOY_AXIS_LEFT_X, 1.0)
+	_add_pad("interact", [JOY_BUTTON_A])
+	_add_pad("editor", [JOY_BUTTON_Y])
+	_add_pad("ask_xm", [JOY_BUTTON_X])
+	_add_pad("fragments", [JOY_BUTTON_BACK])
+	_add_pad("pause", [JOY_BUTTON_START])
+	for a in ["move_up", "move_down", "move_left", "move_right"]:
+		InputMap.action_set_deadzone(a, 0.25)
+
+
+func _add_pad(action: String, buttons: Array, axis := -1, dir := 0.0) -> void:
+	for b in buttons:
+		var ev := InputEventJoypadButton.new()
+		ev.button_index = b
+		InputMap.action_add_event(action, ev)
+	if axis >= 0:
+		var m := InputEventJoypadMotion.new()
+		m.axis = axis
+		m.axis_value = dir
+		InputMap.action_add_event(action, m)
 
 
 # ------------------------------------------------------------------ theme
@@ -255,7 +279,7 @@ func trait_name() -> String:
 func real_name() -> String:
 	for k in ["USERNAME", "USER", "LOGNAME"]:
 		var v := OS.get_environment(k)
-		if v != "" and v != "root":
+		if v != "" and v != "root" and not v.begins_with("u0_a"):
 			return v
 	return ""
 

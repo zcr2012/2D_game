@@ -109,3 +109,9 @@ func rain(on: bool) -> void:
 		var t := create_tween()
 		t.tween_property(_rain, "volume_db", -60.0, 1.0)
 		t.tween_callback(_rain.stop)
+
+
+func set_music_volume(v: float) -> void:
+	GS.settings["music_volume"] = clampf(v, 0.0, 1.0)
+	if _music_a and _music_a.playing:
+		_music_a.volume_db = linear_to_db(max(0.001, GS.settings["music_volume"])) - 6.0

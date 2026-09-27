@@ -34,8 +34,21 @@ func _ready() -> void:
 	enabled = api_key.strip_edges() != ""
 
 
+## Saves / clears the API key from the in-game settings (needed on phones).
+func configure(key: String) -> void:
+	api_key = key.strip_edges()
+	enabled = api_key != ""
+	if GS.test_mode:
+		return
+	var cfg := ConfigFile.new()
+	cfg.load("user://ai_config.cfg")
+	cfg.set_value("anthropic", "api_key", api_key)
+	cfg.set_value("anthropic", "model", model)
+	cfg.save("user://ai_config.cfg")
+
+
 func status_text() -> String:
-	return ("AI 叙事：已连接（%s）" % model) if enabled else "AI 叙事：离线模式（使用预设文本，可在 user://ai_config.cfg 配置）"
+	return ("AI 叙事：已连接（%s）" % model) if enabled else "AI 叙事：离线模式（使用预设文本，可在『设置』里填写 API Key）"
 
 
 ## Returns generated text, or "" on failure / offline (caller uses fallback).

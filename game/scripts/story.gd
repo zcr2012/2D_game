@@ -127,6 +127,7 @@ func _add_missing_fragments(spots: Dictionary) -> void:
 func _pop_sweet() -> void:
 	d.add_npc("duoduo", "duoduo", Vector2(1200, 672), "和朵朵说话", ev_duoduo)
 	d.add_npc("bear", "bear", Vector2(470, 772), "和熊先生说话", ev_bear)
+	d.add_interact(d.nodes["carousel"], "旋转木马", ev_carousel, 56.0, Callable(), Vector2(0, 18))
 	d.add_interact(d.nodes["tower"], "钟楼", ev_tower, 46.0, Callable(), Vector2(0, 24))
 	d.add_interact(d.nodes["shop"], "模糊的房子", ev_shop, 44.0, Callable(), Vector2(0, 62))
 	d.spawn_fragment("mem_photo", Vector2(282, 336))
@@ -146,6 +147,7 @@ func _pop_melting() -> void:
 	var bear: Node2D = d.add_npc("bear", "bear", Vector2(470, 772), "和熊先生说话", ev_bear)
 	d.sprite_of(bear).modulate = Color(0.95, 0.75, 0.6)
 	d.sprite_of(bear).skew = 0.12
+	d.add_interact(d.nodes["carousel"], "旋转木马", ev_carousel, 56.0, Callable(), Vector2(0, 18))
 	d.add_interact(d.nodes["tower"], "钟楼", ev_tower, 46.0, Callable(), Vector2(0, 24))
 	var shop_prompt := "奶奶的糖果店" if GS.has_frag("mem_photo") else "模糊的房子"
 	d.add_interact(d.nodes["shop"], shop_prompt, ev_shop, 44.0, Callable(), Vector2(0, 62))
@@ -216,7 +218,7 @@ func intro() -> void:
 		"sweet":
 			await Dialog.say("sys", "［梦境接入中……  委托编号 DR-0417 · 梦主：林朵朵，9岁 · 梦境：糖果城市］")
 			await Dialog.say("xm", "检测到梦境波动！你好呀，修复师，我是小眠。这个梦已经重复了二十七个晚上……我们先去找找梦主朵朵吧。", "xm_intro_v1")
-			await Dialog.say("xm", "操作提示：WASD 移动，E 互动。有不懂的，随时按 Q 问我。")
+			await Dialog.say("xm", Plat.controls_intro())
 			objective("找到梦主朵朵（她好像在东边的蛋糕广场）")
 		"melting":
 			await Dialog.say("sys", "［第二次接入 · 梦境文件体积 +14% · 检测到未授权的生长］")
@@ -430,7 +432,7 @@ func _meet_tangxin_v1() -> void:
 	GS.set_flag("v1_tx")
 	objective("（可选）继续探索、收集碎片 · 准备好后回到钟楼，对梦境核心做出选择")
 	if not GS.has_frag("emo_sad"):
-		await Dialog.say("xm", "朵朵说，晚上城市会想起一些事……试试按 Tab 打开梦境编辑器，把时间调到『夜晚』？")
+		await Dialog.say("xm", "朵朵说，晚上城市会想起一些事……试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"))
 
 
 func _meet_tangxin_v2() -> void:
@@ -507,6 +509,21 @@ func xm_react() -> void:
 			await Dialog.say("xm", "记录完毕！……不过，我好像第一次觉得，记录不是全部。")
 
 
+func ev_carousel() -> void:
+	if GS.stage() == "melting":
+		await Dialog.say("sys", "旋转木马塌下去了一截。姜饼马的糖霜在往下淌，音乐盒慢得像在打瞌睡。")
+		await Dialog.say("xm", "它还在转……只是转得很累。")
+		return
+	if GS.time == "night":
+		await Dialog.say("sys", "夜里的旋转木马亮着灯，却一个人也没有。第三匹马的马鞍上，放着一顶小小的毛线帽。")
+		await Dialog.say("xm", "毛线帽……是老人家织的那种。")
+		return
+	await Dialog.say("sys", "一座糖做的旋转木马，永远在转，永远不会停。")
+	await Dialog.say("dd", "奶奶说，坐在最外圈的那匹马上，就能一直转到天黑也不头晕。")
+	if GS.emotion != "happy":
+		await Dialog.say("xm", "如果梦再快乐一点……它会不会转得更快？")
+
+
 func ev_shop() -> void:
 	var open: bool = GS.has_frag("mem_photo") and GS.stage() != "sweet"
 	if not open:
@@ -541,7 +558,7 @@ func break_wall(w: Node2D) -> void:
 	if GS.emotion != "anger":
 		await Dialog.say("sys", "巧克力墙很坚固，上面有细细的裂缝。也许需要一点……愤怒？")
 		if GS.has_frag("emo_anger"):
-			await Dialog.say("xm", "试试在梦境编辑器（Tab）里把情绪切换到『愤怒』。")
+			await Dialog.say("xm", "试试在梦境编辑器（%s）里把情绪切换到『愤怒』。" % Plat.k("editor"))
 		return
 	d.break_wall(w)
 	GS.emit_signal("toast", "巧克力墙碎了！")
@@ -636,7 +653,7 @@ func current_hint() -> String:
 		"sweet":
 			if not GS.flag("v1_dd"): return "朵朵应该在东边的蛋糕广场。"
 			if not GS.flag("v1_tx"): return "去北边的钟楼看看，指针好像不太对劲。"
-			if not GS.has_frag("emo_sad"): return "朵朵说晚上城市会想起一些事——按 Tab 把时间调到夜晚，去东南边找找发光的东西。"
+			if not GS.has_frag("emo_sad"): return "朵朵说晚上城市会想起一些事——%s把时间调到夜晚，去东南边找找发光的东西。" % Plat.press("editor")
 			if not GS.has_frag("mem_photo"): return "西北的棒棒糖林里好像有东西在闪。"
 			for k in ["sign", "code", "icecream"]:
 				if d.nodes.has("glitch_" + k) and is_instance_valid(d.nodes["glitch_" + k]):
@@ -706,7 +723,7 @@ func _fallback_answer(q: String) -> String:
 func _free_chat() -> void:
 	await Dialog.say("tx", "我可以回答你三个问题。什么都可以问。")
 	for n in 3:
-		var q: String = await Dialog.ask_text("tx", "（输入你想问糖心的话，回车发送。直接回车或按 Esc 跳过）", "例如：你为什么要造迷宫？")
+		var q: String = await Dialog.ask_text("tx", "（输入你想问糖心的话，回车或点『发送』；不想问就点『跳过』）", "例如：你为什么要造迷宫？")
 		if q == "":
 			break
 		await Dialog.say("me", q)

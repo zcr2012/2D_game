@@ -25,17 +25,18 @@ func _ready() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(root)
 	U.nebula(root, 0.55)
+	var stage := U.stage(root)
 
-	var header := U.label(root, "梦境修复所 · 2078", 36, Color(0.5, 0.95, 1.0))
+	var header := U.label(stage, "梦境修复所 · 2078", 36, Color(0.5, 0.95, 1.0))
 	header.position = Vector2(30, 18)
-	var sub := U.label(root, "DREAM REPAIR CLINIC — 第七区 · 夜班", 24, Color(1, 1, 1, 0.5))
+	var sub := U.label(stage, "DREAM REPAIR CLINIC — 第七区 · 夜班", 24, Color(1, 1, 1, 0.5))
 	sub.position = Vector2(32, 62)
 
 	var cols := HBoxContainer.new()
 	cols.position = Vector2(24, 104)
 	cols.size = Vector2(1232, 500)
 	cols.add_theme_constant_override("separation", 16)
-	root.add_child(cols)
+	stage.add_child(cols)
 
 	# ---- Xiaomian
 	var left := PanelContainer.new()
@@ -107,7 +108,7 @@ func _ready() -> void:
 	var actions := HBoxContainer.new()
 	actions.position = Vector2(24, 620)
 	actions.add_theme_constant_override("separation", 16)
-	root.add_child(actions)
+	stage.add_child(actions)
 	_dive_btn = U.button(actions, "躺进梦境舱 · 第 %d 次潜入" % GS.dive(), _dive, Vector2(460, 56))
 	U.button(actions, "回到标题", func(): GS.goto("title"), Vector2(200, 56))
 	_dive_btn.disabled = true
@@ -115,11 +116,16 @@ func _ready() -> void:
 	# ---- ticker
 	var tbg := ColorRect.new()
 	tbg.color = Color(0, 0, 0, 0.45)
-	tbg.position = Vector2(0, 686)
-	tbg.size = Vector2(1280, 34)
+	tbg.anchor_top = 1.0
+	tbg.anchor_bottom = 1.0
+	tbg.anchor_right = 1.0
+	tbg.offset_top = -34
 	root.add_child(tbg)
 	_ticker = U.label(root, "      ".join(NEWS), 24, Color(1.0, 0.92, 0.6, 0.85))
-	_ticker.position = Vector2(1280, 690)
+	_ticker.anchor_top = 1.0
+	_ticker.anchor_bottom = 1.0
+	_ticker.offset_top = -30
+	_ticker.position.x = _screen_w()
 
 	Audio.music("clinic")
 	_intro()
@@ -128,7 +134,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_ticker.position.x -= 70.0 * delta
 	if _ticker.position.x < -_ticker.size.x:
-		_ticker.position.x = 1280
+		_ticker.position.x = _screen_w()
+
+
+func _screen_w() -> float:
+	return get_viewport().get_visible_rect().size.x
 
 
 func _set_speech(t: String) -> void:
@@ -149,7 +159,7 @@ func _intro() -> void:
 				await Dialog.say("xm", "早上好，修复师！……啊不对，现在是夜班。晚上好！今天的委托到了。")
 				await Dialog.say("xm", "梦主是一个叫朵朵的小女孩。她的梦『糖果城市』已经重复了二十七个晚上，而且每晚都在变大。")
 				await Dialog.say("xm", "委托人是朵朵的妈妈。她说：『把她的梦修好，让她像以前一样睡个好觉。』")
-				await Dialog.say("xm", "在梦里，按 Tab 可以打开梦境编辑器，改变时间、情绪和现实程度。不过每次修改都会消耗梦境稳定度。")
+				await Dialog.say("xm", "在梦里，%s可以打开梦境编辑器，改变时间、情绪和现实程度。不过每次修改都会消耗梦境稳定度。" % Plat.press("editor"))
 				GS.set_flag("briefed")
 			_set_speech("准备好了就躺进梦境舱吧，我会跟你一起进去。")
 		1:

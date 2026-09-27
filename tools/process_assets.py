@@ -44,8 +44,13 @@ ASSETS = {
     "house_melted": (150, 64, False, 0),
     "clocktower":   (250, 64, False, 0),
     "lollipop":     (92, 48, False, 0),
-    "carousel":     (130, 64, False, 0),   # optional (generated later)
-    "chocowall":    (64, 32, False, 0),    # optional; procedural fallback exists
+    "carousel":     (130, 64, False, 0),
+}
+
+# Tiles: stretched to an exact size and made fully opaque, so neighbouring
+# blocks join without seams.  name: (width, height, palette colours)
+TILES = {
+    "chocowall":    (48, 64, 32),          # maze wall block; procedural fallback exists
 }
 
 KEY_LO = 40    # greenness below this -> fully opaque
@@ -125,7 +130,32 @@ def portrait(img: Image.Image, ratio: float, size=300) -> Image.Image:
     return crop.resize((max(1, int(crop.width * scale)), max(1, int(crop.height * scale))), Image.LANCZOS)
 
 
+def process_tile(name: str) -> bool:
+    src = os.path.join(RAW, name + ".png")
+    if not os.path.exists(src):
+        print(f"  - skip {name} (no raw image)")
+        return False
+    w, h, colors = TILES[name]
+    keyed = autocrop(clean_islands(chroma_key(Image.open(src))), pad=0)
+    small = keyed.resize((w, h), Image.LANCZOS)
+    arr = np.asarray(small).astype(np.int32)
+    solid = arr[..., 3] > 110
+    # transparent corner pixels -> darkest opaque colour (a clean outline)
+    dark = arr[solid][:, :3]
+    dark = dark[np.argsort(dark.sum(axis=1))[: max(1, len(dark) // 50)]].mean(axis=0)
+    arr[~solid, :3] = dark.astype(np.int32)
+    arr[..., 3] = 255
+    rgb = Image.fromarray(arr[..., :3].astype(np.uint8), "RGB")
+    if colors:
+        rgb = rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.NONE).convert("RGB")
+    rgb.convert("RGBA").save(os.path.join(OUT_SPRITES, name + ".png"))
+    print(f"  + {name}: tile {w}x{h}")
+    return True
+
+
 def process(name: str) -> bool:
+    if name in TILES:
+        return process_tile(name)
     src = os.path.join(RAW, name + ".png")
     if not os.path.exists(src):
         print(f"  - skip {name} (no raw image)")
@@ -146,9 +176,9 @@ def process(name: str) -> bool:
 def main():
     os.makedirs(OUT_SPRITES, exist_ok=True)
     os.makedirs(OUT_PORTRAITS, exist_ok=True)
-    names = sys.argv[1:] or list(ASSETS)
+    names = sys.argv[1:] or list(ASSETS) + list(TILES)
     for n in names:
-        if n not in ASSETS:
+        if n not in ASSETS and n not in TILES:
             print(f"  ! unknown asset {n}")
             continue
         process(n)

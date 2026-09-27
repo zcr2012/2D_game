@@ -10,6 +10,7 @@ const Interactable := preload("res://scripts/interactable.gd")
 const Shadow := preload("res://scripts/shadow.gd")
 const Story := preload("res://scripts/story.gd")
 const Hud := preload("res://scripts/hud.gd")
+const TouchControls := preload("res://scripts/touch_controls.gd")
 
 ## Soft ellipse shadow under characters.
 class Dot extends Node2D:
@@ -31,6 +32,7 @@ var cracks: Sprite2D
 var player
 var xm
 var camera: Camera2D
+var touch = null            # on-screen controls (phones / touch screens)
 var hud
 var story
 var post_mat: ShaderMaterial
@@ -126,6 +128,10 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.dream = self
 	add_child(hud)
+	touch = TouchControls.new()
+	touch.dream = self
+	add_child(touch)
+	Plat.app_paused.connect(_on_app_paused)
 
 	var fl := CanvasLayer.new()
 	fl.layer = 40
@@ -353,13 +359,20 @@ func _build_town(melted: bool) -> void:
 	var tints := [Color(1.0, 0.75, 0.85), Color(0.75, 0.9, 1.0), Color(1.0, 0.95, 0.7), Color(0.85, 0.75, 1.0)]
 	for i in 34:
 		var gp := Vector2(rng.randf_range(90, 1510), rng.randf_range(140, 1150))
-		if absf(gp.x - 800) < 70 or absf(gp.y - 770) < 50 or gp.distance_to(Vector2(1250, 640)) < 170:
+		if absf(gp.x - 800) < 70 or absf(gp.y - 770) < 50 or gp.distance_to(Vector2(1250, 640)) < 170 or gp.distance_to(Vector2(1265, 900)) < 90:
 			continue
 		var g := add_prop("gumdrop", gp)
 		sprite_of(g).modulate = tints[i % tints.size()]
 		if melted:
 			sprite_of(g).scale = Vector2(1.1, 0.8)
 	nodes["tower"] = add_prop("clocktower", Vector2(800, 300), Vector2(60, 26))
+	# grandma's carousel (SE). It "turns" by flipping in the sweet dream and sags as the city melts.
+	var car := add_prop("carousel", Vector2(1265, 935), Vector2(80, 28))
+	nodes["carousel"] = car
+	wobblers.append(car)
+	if GS.stage() == "melting":
+		sprite_of(car).scale = Vector2(1.06, 0.9)
+		sprite_of(car).modulate = Color(1.0, 0.86, 0.8)
 	wobblers.append(nodes["tower"])
 	# border of lollipop trees
 	for x in range(50, 1600, 100):
@@ -828,6 +841,15 @@ func _process(delta: float) -> void:
 			var s := sprite_of(w)
 			s.rotation = sin(_t * 1.7 + w.position.x * 0.01) * wob
 			s.skew = sin(_t * 1.3 + w.position.y * 0.02) * wob * 0.8
+	# the carousel turns (sprite flip) while the dream is sweet, or happy
+	if nodes.has("carousel") and is_instance_valid(nodes["carousel"]):
+		var spin: float = 0.0
+		if GS.stage() == "sweet" or GS.emotion == "happy":
+			spin = 1.6 if GS.emotion == "happy" else 0.9
+		elif GS.stage() == "melting":
+			spin = 0.25
+		if spin > 0.0:
+			sprite_of(nodes["carousel"]).flip_h = int(_t * spin) % 2 == 1
 	# stability drain in unstable realities
 	if can_player_act():
 		var drain: float = [0.0, 0.0, 0.45, 0.9][GS.reality]
@@ -910,6 +932,12 @@ func _input(event: InputEvent) -> void:
 		elif event.is_action_pressed("ask_xm"):
 			get_viewport().set_input_as_handled()
 			_run(story.ask_xm)
+
+
+## Phone went to the background (call, home button): open the pause menu.
+func _on_app_paused() -> void:
+	if can_player_act():
+		hud.toggle_pause()
 
 
 func _run(fn: Callable) -> void:

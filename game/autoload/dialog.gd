@@ -40,6 +40,7 @@ var _name: Label
 var _text: RichTextLabel
 var _choices: VBoxContainer
 var _line: LineEdit
+var _input_row: HBoxContainer
 var _more: Label
 
 
@@ -101,12 +102,30 @@ func _ready() -> void:
 	_choices.add_theme_constant_override("separation", 4)
 	vb.add_child(_choices)
 
+	_input_row = HBoxContainer.new()
+	_input_row.add_theme_constant_override("separation", 8)
+	_input_row.visible = false
+	vb.add_child(_input_row)
 	_line = LineEdit.new()
-	_line.visible = false
 	_line.add_theme_font_size_override("font_size", 24)
 	_line.max_length = 60
+	_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_line.custom_minimum_size = Vector2(0, 52)
+	_line.virtual_keyboard_enabled = true
 	_line.text_submitted.connect(_on_line_submitted)
-	vb.add_child(_line)
+	_input_row.add_child(_line)
+	var send := Button.new()
+	send.text = "发送"
+	send.custom_minimum_size = Vector2(110, 52)
+	send.focus_mode = Control.FOCUS_NONE
+	send.pressed.connect(_on_send_pressed)
+	_input_row.add_child(send)
+	var skip := Button.new()
+	skip.text = "跳过"
+	skip.custom_minimum_size = Vector2(110, 52)
+	skip.focus_mode = Control.FOCUS_NONE
+	skip.pressed.connect(_on_skip_pressed)
+	_input_row.add_child(skip)
 
 	_more = Label.new()
 	_more.text = "▼"
@@ -115,6 +134,20 @@ func _ready() -> void:
 	vb.add_child(_more)
 
 	_panel.visible = false
+	get_viewport().size_changed.connect(_layout)
+	_layout()
+
+
+## Safe area + (while typing on a phone) lift the box above the virtual keyboard.
+func _layout() -> void:
+	var m := Plat.safe_margins(get_viewport())
+	var kb := 0.0
+	if mode == "input" and Plat.is_mobile:
+		kb = Plat.window_to_canvas(float(DisplayServer.virtual_keyboard_get_height()))
+	_root.offset_left = m.position.x
+	_root.offset_top = m.position.y
+	_root.offset_right = -m.size.x
+	_root.offset_bottom = -maxf(m.size.y, kb)
 
 
 # ------------------------------------------------------------------ public
@@ -189,14 +222,16 @@ func ask_text(who: String, text: String, placeholder := "") -> String:
 	mode = "input"
 	_set_text(text)
 	_finish_typing()
-	_line.visible = true
+	_input_row.visible = true
 	_line.text = ""
 	_line.placeholder_text = placeholder
 	_more.visible = false
 	_line.call_deferred("grab_focus")
 	var s: String = await input_done
-	_line.visible = false
+	_input_row.visible = false
 	_line.release_focus()
+	DisplayServer.virtual_keyboard_hide()
+	_layout()
 	_schedule_close()
 	return s.strip_edges()
 
@@ -266,6 +301,8 @@ func _shrink() -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
+	if mode == "input" and Plat.is_mobile:
+		_layout()
 	if _typing:
 		var total := _text.get_total_character_count()
 		var before := int(_chars)
@@ -321,6 +358,15 @@ func _hover_focus(b: Button) -> void:
 func _on_choice(i: int) -> void:
 	if mode == "choose":
 		chosen.emit(i)
+
+
+func _on_send_pressed() -> void:
+	_on_line_submitted(_line.text)
+
+
+func _on_skip_pressed() -> void:
+	if mode == "input":
+		input_done.emit("")
 
 
 func _on_line_submitted(t: String) -> void:

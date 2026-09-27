@@ -114,10 +114,23 @@ func _play(v: VBoxContainer) -> void:
 	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var lp: String = GS.flags.get("letter_path", "")
 	if lp != "":
-		var ll := U.label(v, "糖心在你的电脑里留下了一封信：\n" + lp, 24, Color(1.0, 0.75, 0.9))
-		ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		ll.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-		ll.custom_minimum_size = Vector2(1040, 0)
+		if Plat.is_mobile:
+			# phones hide app files from the user: hand the letter over in-game
+			var ll := U.label(v, "糖心在你的手机里留下了一封信。", 24, Color(1.0, 0.75, 0.9))
+			ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			var lb := HBoxContainer.new()
+			lb.alignment = BoxContainer.ALIGNMENT_CENTER
+			v.add_child(lb)
+			U.button(lb, "打开信", _show_letter, Vector2(260, 52))
+		else:
+			var ll := U.label(v, "糖心在你的电脑里留下了一封信：\n" + lp, 24, Color(1.0, 0.75, 0.9))
+			ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			ll.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+			ll.custom_minimum_size = Vector2(1040, 0)
+			var lb := HBoxContainer.new()
+			lb.alignment = BoxContainer.ALIGNMENT_CENTER
+			v.add_child(lb)
+			U.button(lb, "打开所在文件夹", func(): OS.shell_show_in_file_manager(lp), Vector2(300, 52))
 	var th := U.label(v, "感谢游玩 · 《梦境修复师》垂直切片 Demo", 24, Color(1, 1, 1, 0.6))
 	th.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var hb := HBoxContainer.new()
@@ -125,6 +138,28 @@ func _play(v: VBoxContainer) -> void:
 	v.add_child(hb)
 	var b := U.button(hb, "回到标题", _to_title, Vector2(260, 52))
 	b.grab_focus()
+
+
+func _show_letter() -> void:
+	var f := FileAccess.open("user://给屏幕前的你.txt", FileAccess.READ)
+	var body := f.get_as_text() if f else "（信被梦吃掉了。）"
+	var p := PanelContainer.new()
+	p.anchor_left = 0.5
+	p.anchor_right = 0.5
+	p.anchor_top = 0.5
+	p.anchor_bottom = 0.5
+	p.offset_left = -360
+	p.offset_right = 360
+	p.offset_top = -250
+	p.offset_bottom = 250
+	get_child(0).add_child(p)
+	var m := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + side, 36)
+	p.add_child(m)
+	var l := U.label(m, body, 24, Color(1.0, 0.9, 0.95))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	U.close_button(p, p.queue_free)
 
 
 func _to_title() -> void:

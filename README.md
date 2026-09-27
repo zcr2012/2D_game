@@ -5,6 +5,7 @@
 
 **类型**：2D 半开放探索 + 解谜 + 轻 RPG + AI 叙事
 **引擎**：Godot 4.3+（GL Compatibility 渲染器）
+**平台**：Windows · Linux · Android（手机 / 平板）；iOS 代码已适配，打包需要 Mac
 **当前版本**：垂直切片 Demo，梦境一《糖果城市》（约 15 分钟，3 次潜入，3 个结局）
 
 ---
@@ -19,15 +20,34 @@
 
 ### 操作
 
-| 按键 | 功能 |
-|---|---|
-| WASD / 方向键 | 移动 |
-| E / 空格 | 互动、推进对话 |
-| **Tab** | **梦境编辑器**（时间 / 情绪 / 现实程度） |
-| Q | 问小眠（梦境分析 + 提示） |
-| I | 梦境碎片图鉴 |
-| 1–4 / 鼠标 | 选择对话选项 |
-| Esc | 暂停菜单 |
+| 功能 | 键盘 | 手柄 | 触屏（手机 / 平板） |
+|---|---|---|---|
+| 移动 | WASD / 方向键 | 左摇杆 / 十字键 | 在屏幕**左侧**任意位置按住拖动（浮动摇杆） |
+| 互动、推进对话 | E / 空格 | A | 右下角大按钮『互动』（附近有东西时会发光）；对话中点屏幕任意处 |
+| **梦境编辑器** | **Tab** | Y | 『编辑』 |
+| 问小眠 | Q | X | 『小眠』 |
+| 碎片图鉴 | I | Back / View | 『碎片』 |
+| 暂停菜单 | Esc | Start | 右上角『菜单』 · Android 返回键 |
+| 选择对话选项 | 1–4 / 鼠标 | 十字键 + A | 直接点选项 |
+| 全屏 | F11 / Alt+Enter | — | — |
+
+游戏会跟着你**正在用的设备**切换：一碰屏幕就出现触屏按键，一按键盘或手柄就收起来，小眠的提示也会跟着改（“按 Tab” / “点『编辑』” / “按 Y”）。可以在『设置 → 触屏按键』里改成总是显示或隐藏。
+
+## 平台适配
+
+| | 电脑（Windows / Linux） | 手机 / 平板（Android / iOS） |
+|---|---|---|
+| 屏幕比例 | 16:9、21:9 带鱼屏、任意窗口大小 | 20:9、19.5:9 全面屏，4:3 平板 |
+| 画面 | 可调窗口 + 全屏（设置里或 F11），设置会记住 | 横屏（可左右翻转），常亮，沉浸式全屏 |
+| 刘海 / 圆角 | — | HUD、对话框、按键都避开安全区 |
+| 输入 | 键盘、鼠标、手柄 | 多点触控：一只手走路，另一只手按键 |
+| 输入框（问糖心） | 回车发送 | 弹出系统键盘，对话框自动移到键盘上方；有『发送』『跳过』按钮 |
+| 切到后台 | — | 来电 / 按 Home 自动暂停 |
+| 返回键 | — | Android 返回键 = 暂停 / 关闭面板；在标题界面退出 |
+| 糖心的信 | 写到存档文件夹，结局有“打开所在文件夹” | 手机上看不到应用文件夹，结局直接『打开信』 |
+| AI 密钥 | 环境变量 / 配置文件 / 设置界面 | 设置界面里填写 |
+
+标题、诊所、结局界面的内容在任何比例下都居中；梦里的镜头在宽屏上会多看到一点世界。所有面板都有 × 关闭按钮（鼠标和手指都能点）。
 
 ---
 
@@ -45,9 +65,28 @@
 | **美术方案** | AI 生成的像素角色 + “Blender 渲染风格”的 3D 道具，经脚本抠图、裁切、缩放、减色后变成像素素材；地面是预渲染的整张地图。 |
 | **AI 配音** | 小眠、糖心的 10 句关键台词已配音（`game/assets/audio/voice/`），其余台词用打字机音效。 |
 
+## 打包成 exe / Linux 程序 / APK
+
+### 方法一：让 GitHub 自动打包（推荐）
+
+仓库里已经有 `.github/workflows/export.yml`：每次 push，GitHub Actions 会先跑两套自动测试，然后打出三个包。在仓库的 **Actions** 页面点进这次运行，页面底部 **Artifacts** 里下载：
+
+- `DreamRepair-windows` → `DreamRepair.exe`（单文件，双击运行）
+- `DreamRepair-linux` → `DreamRepair.x86_64`（`chmod +x` 后运行）
+- `DreamRepair-android` → `DreamRepair-debug.apk`（传到手机上安装，需要允许“安装未知来源应用”）
+
+APK 是 debug 签名，自己玩、给朋友测都够用；上架应用商店需要自己的 release 签名密钥。
+
+### 方法二：在自己电脑上用 Godot 编辑器打包
+
+1. 编辑器菜单 **编辑器 → 管理导出模板 → 下载并安装**（4.3）。
+2. **项目 → 导出**，已经配好了三个预设：`Windows Desktop`、`Linux`、`Android`，选一个点“导出项目”。
+3. Android 额外需要：安装 JDK 17 和 Android SDK，然后在 **编辑器设置 → 导出 → Android** 里填路径（Godot 会自动生成 debug 密钥）。
+4. iOS：需要一台装了 Xcode 的 Mac 和 Apple 开发者账号，在 Mac 上添加 iOS 预设导出即可，代码不用改。
+
 ### 可选：接入实时 AI 叙事
 
-游戏**完全可以离线运行**，所有 AI 相关的地方都有预写文本兜底。接入后，**糖心的自由对话**和**小眠的梦境分析**会根据你当前的游戏状态实时生成：
+游戏**完全可以离线运行**，所有 AI 相关的地方都有预写文本兜底。接入后，**糖心的自由对话**和**小眠的梦境分析**会根据你当前的游戏状态实时生成。最简单的方式是在 **标题 → 设置 → AI 密钥** 里粘贴（手机也能用），或者：
 
 ```ini
 ; user://ai_config.cfg   （也可以直接设置环境变量 ANTHROPIC_API_KEY）
@@ -65,7 +104,8 @@ model="claude-sonnet-4-5"
 ```
 game/                      Godot 项目（打开 game/project.godot）
   autoload/
-    gs.gd                  全局状态：潜入次数、碎片、分数、小眠性格、编辑器状态、存档
+    gs.gd                  全局状态：潜入次数、碎片、分数、小眠性格、编辑器状态、存档、键位（键盘 + 手柄）
+    platform.gd            平台适配：设备 / 输入方式检测、按键提示文字、安全区、全屏、返回键、后台暂停、设置存档
     dialog.gd              立绘对话框：await say / choose / ask_text，支持配音
     audio.gd               音乐淡入淡出、音效、配音、雨声
     ai.gd                  可选的 Anthropic API 接入（糖心对话、小眠分析）
@@ -73,18 +113,25 @@ game/                      Godot 项目（打开 game/project.godot）
   scripts/
     dream.gd               地图构建（3 个阶段）、编辑器效果、互动、影子、崩塌、唤醒
     story.gd               全部剧情：事件、分支、异常数据、核心选择、结局
-    hud.gd                 HUD、梦境编辑器面板、碎片图鉴、暂停菜单
+    hud.gd                 HUD、梦境编辑器面板、碎片图鉴、暂停菜单、设置
+    touch_controls.gd      触屏：浮动摇杆 + 右侧按钮（多点触控）
+    ui_util.gd             共用 UI：居中舞台、× 关闭按钮、设置面板
     clinic.gd / title.gd / ending.gd
     player.gd follower.gd shadow.gd interactable.gd
   shaders/
     dream_post.gdshader    全屏：情绪调色、现实扭曲/色差/故障、夜晚光照
     nebula.gdshader        标题 / 诊所 / 结局背景
-  tests/smoke.gd           无头自动游玩测试
+  tests/smoke.gd           无头自动游玩测试（完整三次潜入 + 结局）
+  tests/platform_test.gd   平台测试：5 种屏幕比例的布局、触屏 / 手柄 / 键盘、返回键、输入框
+  export_presets.cfg       导出预设：Windows / Linux / Android
+.github/workflows/         GitHub Actions：测试 + 自动打包三个平台
   assets/                  处理后的游戏素材
 art_src/raw/               AI 生成的原图（#00FF00 绿幕）
+art_src/PROMPTS.md         生图提示词和通用规则
 tools/
   process_assets.py        抠图 → 去溢色 → 自动裁切 → 缩放 → 硬边 alpha → 减色 → 立绘
   procedural_assets.py     程序化生成的小素材、预渲染地面、音乐盒 BGM、音效
+  layout_preview.py        把平台测试量出的界面布局画成图，检查各种屏幕比例
 ```
 
 ### 素材流程
@@ -96,13 +143,14 @@ python3 tools/process_assets.py carousel   # 只处理某一个
 python3 tools/procedural_assets.py         # 重新生成程序化素材和音频
 ```
 
-替换素材：把新的 AI 图（纯绿 `#00FF00` 背景）放进 `art_src/raw/<名字>.png`，再运行 `process_assets.py`。目标尺寸和调色板大小在脚本顶部的 `ASSETS` 表里。目前程序化生成、可以换成 AI 图的有：`chocowall`（迷宫墙，放入原图后会自动优先使用）、`cake`、`schoolbag`、`gumdrop`、碎片图标。
+替换素材：把新的 AI 图（纯绿 `#00FF00` 背景）放进 `art_src/raw/<名字>.png`，再运行 `process_assets.py`。目标尺寸和调色板大小在脚本顶部的 `ASSETS` 表里；需要无缝拼接的砖块放在 `TILES` 表里（拉伸到精确尺寸、边缘补成不透明）。提示词和规则见 [`art_src/PROMPTS.md`](art_src/PROMPTS.md)。目前还是程序化生成、可以换成 AI 图的有：`cake`、`schoolbag`、`gumdrop`、碎片图标。
 
 ### 测试
 
 ```bash
 godot --headless --path game --import
-godot --headless --path game res://tests/smoke.tscn
+godot --headless --path game res://tests/smoke.tscn          # 完整游玩
+godot --headless --path game res://tests/platform_test.tscn  # 平台适配
 ```
 
 测试会跑完三次潜入（对话自动推进、选项按脚本选），检查碎片、编辑器效果、糖浆湖、巧克力墙、影子、迷宫寻路、结局、崩塌和小眠劝阻，并打印完整剧情记录。

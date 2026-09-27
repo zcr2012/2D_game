@@ -1,0 +1,68 @@
+name: Build (Windows / Linux / Android)
+
+# Every push builds the game for all three platforms. Download the results
+# from the run's "Artifacts" section on the GitHub Actions page.
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.3
+  PROJECT_PATH: game
+  EXPORT_NAME: DreamRepair
+
+jobs:
+  test:
+    name: Headless tests
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import
+        run: cd $PROJECT_PATH && godot --headless --import || true
+      - name: Smoke test (full playthrough)
+        run: cd $PROJECT_PATH && godot --headless res://tests/smoke.tscn
+      - name: Platform test (touch / layouts / gamepad)
+        run: cd $PROJECT_PATH && godot --headless res://tests/platform_test.tscn
+
+  export:
+    name: Export ${{ matrix.name }}
+    needs: test
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.3
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            preset: "Windows Desktop"
+            file: DreamRepair.exe
+            mode: --export-release
+          - name: linux
+            preset: "Linux"
+            file: DreamRepair.x86_64
+            mode: --export-release
+          - name: android
+            preset: "Android"
+            file: DreamRepair-debug.apk
+            mode: --export-debug      # signed with the image's debug keystore
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup templates & editor settings
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates/ ~/.config/
+          mv /root/.config/godot ~/.config/godot || true
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Export
+        run: |
+          mkdir -v -p build/${{ matrix.name }}
+          EXPORT_DIR="$(readlink -f build)"
+          cd $PROJECT_PATH
+          godot --headless --import || true
+          godot --headless --verbose ${{ matrix.mode }} "${{ matrix.preset }}" "$EXPORT_DIR/${{ matrix.name }}/${{ matrix.file }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DreamRepair-${{ matrix.name }}
+          path: build/${{ matrix.name }}

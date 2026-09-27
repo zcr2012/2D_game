@@ -8,6 +8,8 @@ const EMO_COLORS := {
 	"emo_regret": Color(0.55, 0.9, 0.8),
 }
 
+const U := preload("res://scripts/ui_util.gd")
+
 var dream = null
 
 var _title: Label
@@ -28,6 +30,11 @@ var _ed_stab: Label
 var fragments_panel: PanelContainer
 var _frag_list: GridContainer
 var pause_panel: PanelContainer
+var settings_panel: PanelContainer
+var _root: Control
+var _hint: Label
+var _ed_footer: Label
+var _frag_footer: Label
 
 
 func _ready() -> void:
@@ -36,6 +43,7 @@ func _ready() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	_root = root
 
 	# ---- top-left status
 	var tl := PanelContainer.new()
@@ -91,7 +99,7 @@ func _ready() -> void:
 
 	# ---- bottom hints
 	var hint := Label.new()
-	hint.text = "WASD 移动   E 互动   Tab 梦境编辑器   Q 问小眠   I 碎片   Esc 菜单"
+	_hint = hint
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 	hint.offset_left = 16
@@ -133,12 +141,43 @@ func _ready() -> void:
 	_build_editor(root)
 	_build_fragments(root)
 	_build_pause(root)
+	_build_settings(root)
+
+	get_viewport().size_changed.connect(_apply_safe_area)
+	Plat.input_mode_changed.connect(_on_input_mode)
+	_apply_safe_area()
+	_on_input_mode("")
 
 	GS.stats_changed.connect(refresh)
 	GS.editor_changed.connect(refresh)
 	GS.fragment_added.connect(_on_fragment_added)
 	GS.toast.connect(toast)
 	refresh()
+
+
+# ------------------------------------------------------------------ platform
+## Keeps the HUD clear of notches / rounded corners on phones.
+func _apply_safe_area() -> void:
+	var m := Plat.safe_margins(get_viewport())
+	_root.offset_left = m.position.x
+	_root.offset_top = m.position.y
+	_root.offset_right = -m.size.x
+	_root.offset_bottom = -m.size.y
+
+
+## Swaps key hints between keyboard / gamepad / touch wording.
+func _on_input_mode(_m: String) -> void:
+	var touch := Plat.touch_ui()
+	_hint.text = Plat.controls_hint()
+	# on touch screens the bottom corners belong to the joystick and buttons
+	_hint.visible = not touch
+	_ai_label.visible = not touch
+	if touch:
+		_ed_footer.text = "点右上角 × 关闭      修改会立即作用于整个梦境，并消耗稳定度"
+		_frag_footer.text = "点右上角 × 关闭"
+	else:
+		_ed_footer.text = "%s / %s 关闭      修改会立即作用于整个梦境，并消耗稳定度" % [Plat.k("editor"), Plat.k("pause")]
+		_frag_footer.text = "%s / %s 关闭" % [Plat.k("fragments"), Plat.k("pause")]
 
 
 # ------------------------------------------------------------------ status
@@ -173,7 +212,7 @@ func set_objective(t: String) -> void:
 
 func show_prompt(text: String, screen_pos: Vector2) -> void:
 	_prompt.visible = true
-	_prompt.text = "[E] " + text
+	_prompt.text = ("[互动] " if Plat.touch_ui() else "[%s] " % Plat.k("interact")) + text
 	_prompt.size = Vector2.ZERO
 	_prompt.reset_size()
 	_prompt.position = screen_pos - Vector2(_prompt.size.x / 2.0, 0)
@@ -200,7 +239,7 @@ func toast(text: String) -> void:
 
 
 func any_panel_open() -> bool:
-	return editor.visible or fragments_panel.visible or pause_panel.visible
+	return editor.visible or fragments_panel.visible or pause_panel.visible or settings_panel.visible
 
 
 # ------------------------------------------------------------------ editor
@@ -245,10 +284,11 @@ func _build_editor(root: Control) -> void:
 	_ed_desc.add_theme_constant_override("line_separation", 4)
 	v.add_child(_ed_desc)
 	var f := Label.new()
-	f.text = "Tab / Esc 关闭      修改会立即作用于整个梦境，并消耗稳定度"
+	_ed_footer = f
 	f.modulate = Color(1, 1, 1, 0.55)
 	f.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(f)
+	U.close_button(editor, close_editor)
 
 
 func _editor_row(parent: Control, label: String, kind: String, values: Array) -> Array:
@@ -342,8 +382,16 @@ func _on_edit(kind: String, val) -> void:
 	_refresh_editor()
 
 
+## Closes the editor from its × button or the pause key (fires story hooks).
+func close_editor() -> void:
+	if editor.visible:
+		toggle_editor()
+		if dream and dream.story:
+			dream.story.on_editor_closed()
+
+
 func toggle_editor() -> void:
-	if fragments_panel.visible or pause_panel.visible:
+	if fragments_panel.visible or pause_panel.visible or settings_panel.visible:
 		return
 	editor.visible = not editor.visible
 	Audio.sfx("click")
@@ -375,7 +423,7 @@ func _build_fragments(root: Control) -> void:
 	_frag_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(_frag_list)
 	var f := Label.new()
-	f.text = "I / Esc 关闭"
+	_frag_footer = f
 	f.modulate = Color(1, 1, 1, 0.55)
 	f.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(f)
@@ -411,7 +459,7 @@ func _refresh_fragments() -> void:
 
 
 func toggle_fragments() -> void:
-	if editor.visible or pause_panel.visible:
+	if editor.visible or pause_panel.visible or settings_panel.visible:
 		return
 	fragments_panel.visible = not fragments_panel.visible
 	Audio.sfx("click")
@@ -421,7 +469,7 @@ func toggle_fragments() -> void:
 
 # ------------------------------------------------------------------ pause
 func _build_pause(root: Control) -> void:
-	pause_panel = _centered_panel(root, Vector2(460, 330))
+	pause_panel = _centered_panel(root, Vector2(480, 400))
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	pause_panel.add_child(v)
@@ -442,11 +490,38 @@ func _build_pause(root: Control) -> void:
 	b3.text = "回到标题"
 	b3.pressed.connect(func(): GS.goto("title"))
 	v.add_child(b3)
-	var vt := CheckButton.new()
-	vt.text = "角色语音"
-	vt.button_pressed = GS.settings["voice"]
-	vt.toggled.connect(_on_voice_toggled)
-	v.add_child(vt)
+	var b4 := Button.new()
+	b4.text = "设置"
+	b4.pressed.connect(open_settings)
+	v.add_child(b4)
+	for b in [b1, b2, b3, b4]:
+		b.custom_minimum_size = Vector2(0, 56)
+	U.close_button(pause_panel, toggle_pause)
+
+
+func _build_settings(root: Control) -> void:
+	settings_panel = _centered_panel(root, Vector2(640, 470))
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	settings_panel.add_child(v)
+	var t := Label.new()
+	t.text = "设置"
+	t.add_theme_font_size_override("font_size", 36)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	U.settings_box(v)
+	U.close_button(settings_panel, close_settings)
+
+
+func open_settings() -> void:
+	pause_panel.visible = false
+	settings_panel.visible = true
+	Audio.sfx("click")
+
+
+func close_settings() -> void:
+	settings_panel.visible = false
+	pause_panel.visible = true
 
 
 func _on_voice_toggled(on: bool) -> void:
@@ -454,8 +529,11 @@ func _on_voice_toggled(on: bool) -> void:
 
 
 func toggle_pause() -> void:
+	if settings_panel.visible:
+		close_settings()
+		return
 	if editor.visible:
-		editor.visible = false
+		close_editor()
 		return
 	if fragments_panel.visible:
 		fragments_panel.visible = false
