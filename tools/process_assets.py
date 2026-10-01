@@ -45,6 +45,10 @@ ASSETS = {
     "clocktower":   (250, 64, False, 0),
     "lollipop":     (92, 48, False, 0),
     "carousel":     (130, 64, False, 0),
+    # ---- dream 3: station (friendly pixel characters + pre-rendered dome)
+    "xingya":       (60, 48, True, 0.85),
+    "linzhou":      (54, 48, True, 0.55),
+    "sp_observatory": (180, 64, False, 0),
     # ---- dream 2: Old Street (老街)
     "shenyuan":     (52, 48, True, 0.55),
     "laodeng":      (74, 48, True, 0.45),

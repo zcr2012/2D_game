@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="梦境修复师 Dream Repair"
-config/description="2D exploration + puzzle + light RPG + AI narrative. Vertical slice: Candy City."
+config/description="2D exploration + puzzle + light RPG + AI narrative. Three dreams: Candy City, Old Street, Space Station."
 run/main_scene="res://scenes/title.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"

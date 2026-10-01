@@ -58,13 +58,22 @@ func touch_ui() -> bool:
 
 
 ## Human-readable control name for the current input device.
+## While true, key names are omitted: used to build the device-neutral text
+## that is voiced by Xiaomian (one clip serves keyboard, pad and touch).
+var neutral := false
+
+
 func k(action: String) -> String:
+	if neutral:
+		return ""
 	var mode := "touch" if touch_ui() else ("pad" if device == "pad" else "kbd")
 	return LABELS[mode].get(action, action)
 
 
 ## "按 Tab" / "点『编辑』" / "按 Y" — for dialogue hints.
 func press(action: String) -> String:
+	if neutral:
+		return ""
 	return ("点" if touch_ui() else "按 ") + k(action)
 
 
@@ -228,3 +237,11 @@ func save_settings() -> void:
 	cfg.set_value("audio", "music_volume", GS.settings["music_volume"])
 	cfg.set_value("game", "unlock_all", GS.settings["unlock_all"])
 	cfg.save(SETTINGS_PATH)
+
+
+## Runs `fn` with device-specific key names stripped; returns its result.
+func speech_of(fn: Callable) -> Variant:
+	neutral = true
+	var out = fn.call()
+	neutral = false
+	return out

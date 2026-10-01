@@ -6,7 +6,7 @@
 **类型**：2D 半开放探索 + 解谜 + 轻 RPG + AI 叙事
 **引擎**：Godot 4.3+（GL Compatibility 渲染器）
 **平台**：Windows · Linux · Android（手机 / 平板）；iOS 代码已适配，打包需要 Mac
-**当前版本**：垂直切片 Demo，两个可玩的梦境：《糖果城市》（童年）和《梧桐巷》（遗憾），每个约 15 分钟、3 次潜入、3 个结局；第三个梦《太空站》制作中
+**当前版本**：三个可玩的梦境：《糖果城市》（童年）、《梧桐巷》（遗憾）、《太空站》（未来），每个约 15 分钟、3 次潜入、3 个结局，全程约 45 分钟
 **AI 接口**：Claude / OpenAI / Gemini / DeepSeek / Kimi / 通义千问 / 智谱 / OpenRouter / Ollama 等，任意兼容地址都可以自定义（见下文）
 
 ---
@@ -83,7 +83,23 @@
 | **三个结局** | 完美修复者 / 梦境守护者 / 新梦创造者（最后这个需要足够多的“增强”）。 |
 | **进度保存** | 每次潜入结束、梦境崩塌和结局都会保存；回到标题不会删掉通关进度，“继续”会回到当前潜入或已完成的结局。 |
 | **美术方案** | AI 生成的像素角色 + “Blender 渲染风格”的 3D 道具，经脚本抠图、裁切、缩放、减色后变成像素素材；地面是预渲染的整张地图。 |
-| **AI 配音** | 糖果城市：糖心的 4 句关键台词；梧桐巷：老灯、沈远、福伯、苏晚的关键台词。小眠的配音暂时撤下，等音色定稿后统一重做（备份在 `art_src/voice_xm_backup/`）（清单见 [`art_src/VOICE.md`](art_src/VOICE.md)）。文件在 `game/assets/audio/voice/<台词id>.mp3`，缺文件的台词自动退回打字机音效。 |
+| **AI 配音（普通话）** | 小眠使用统一的儿童向女声（明亮、清晰、像小机器人伙伴）；每一句固定台词按文本生成稳定的 id（`xm_<md5前10位>.mp3`），所以三个梦、诊所、结局和小眠的提示都会自动配上音。设备相关的按键名（Tab / Y / 『编辑』）不配音，一条录音三种设备通用。**联网 AI 现场生成的话**无法预录，会继续显示文字。糖心 4 句、梧桐巷角色的关键台词保留。进度和补录办法见 [`art_src/VOICE.md`](art_src/VOICE.md)。缺文件的台词自动退回打字机音效。 |
+
+### 梦境三：《太空站》（未来）
+
+> 远望太空站的十二位乘员做了同一个关于“明天”的梦，梦里却住着第十三个朋友——导航 AI 长出来的**星芽**。站长林舟说：“大家越来越不敢醒来。”
+
+同一座太空站进入 3 次：**晨光轨道 → 失重花园 → 明日之海**（语气温暖，适合孩子，不使用恐怖形象；“噩梦”里追你的是会把你送回入口的维修机器人）。
+
+| 次数 | 地图变化 | 谜题 |
+|---|---|---|
+| 1 晨光轨道 | 完整的甲板，北边是上锁的育种舱 | 种子盒里的照片 + **快乐** 打开育种舱；夜晚听地球来信（**悲伤**碎片）；空花盆里的**遗憾**；三个异常数据（错误记忆 / 被遗忘的乘员 / 虚假的幻想） |
+| 2 失重花园 | 甲板中间裂开一道真空 | **幻想增强** 搭起重力桥（站在桥上时不会被卡住）；**愤怒** 震开卡住的维护门，找到**恐惧**碎片；噩梦里的维修机器人 |
+| 3 明日之海 | 东边的明日舱门封死 | 点亮三个航标：夜晚·轨道钟（现在）、悲伤·冷凝水（地球）、疯狂·星图（未知）→ 舱门打开；在造梦台选择星光花园 / 浮岛港口 / 极光图书馆 |
+
+三个结局：**完美修复者**（恢复标准导航、归档星芽）/ **梦境守护者**（保留星芽，让乘员自己决定未来）/ **新梦创造者**（需要至少两次“增强”和未知星图碎片：建立明确标注为梦、每个人都能自由醒来的新梦文明）。结局后星芽会在你的电脑里留下一份航行记录。
+
+素材：星芽、林舟和观星台是 AI 生成的绿幕原图（`art_src/raw/`），由 `tools/process_assets.py` 抠图缩放；甲板、育种舱、终端等小道具、三张地面和三首循环音乐由 `tools/station_assets.py` 生成。
 
 ## 打包成 exe / Linux 程序 / APK
 
@@ -157,6 +173,7 @@ game/                      Godot 项目（打开 game/project.godot）
     nebula.gdshader        标题 / 诊所 / 结局背景
   tests/smoke.gd           无头自动游玩测试：《糖果城市》（完整三次潜入 + 结局）
   tests/smoke_street.gd    无头自动游玩测试：《梧桐巷》（三次潜入、光桥、卷帘门、三个回声、结局）
+  tests/smoke_station.gd   无头自动游玩测试：《太空站》（三次潜入、重力桥、维护门、三个航标、明日舱门、三个结局、崩塌、配音 id）
   tests/ai_test.gd         各 AI 协议的请求 / 响应解析、自定义接口、设置面板、梦境解锁规则（不联网）
   tests/platform_test.gd   平台测试：5 种屏幕比例的布局、触屏 / 手柄 / 键盘、返回键、输入框
   export_presets.cfg       导出预设：Windows / Linux / Android
@@ -188,6 +205,7 @@ python3 tools/procedural_assets.py street  # 只重新生成《梧桐巷》的�
 godot --headless --path game --import
 godot --headless --path game res://tests/smoke.tscn          # 《糖果城市》完整游玩
 godot --headless --path game res://tests/smoke_street.tscn   # 《梧桐巷》完整游玩
+godot --headless --path game res://tests/smoke_station.tscn  # 《太空站》完整游玩
 godot --headless --path game res://tests/ai_test.tscn        # AI 协议 + 梦境系统
 godot --headless --path game res://tests/platform_test.tscn  # 平台适配
 godot --headless --path game res://tests/save_test.tscn      # 存档读写与恢复
@@ -199,7 +217,7 @@ godot --headless --path game res://tests/save_test.tscn      # 存档读写与�
 
 ## 下一步
 
-- 梦境三《太空站》（未来）：`cases.gd` 里已经占位；照着 `street_map.gd` + `story_street.gd` 加一张地图和一份剧情，再在 `dream.gd` 的 `_ready` 里接上就行。
-- 小眠的配音（两个梦共 12 句）等音色定稿后统一重做，清单见 `art_src/VOICE.md`。
+- 梦境三《太空站》已完成。代码：`station_map.gd`（地图）、`story_station.gd`（剧情）；其余在 `dream.gd` / `clinic.gd` / `ending.gd` 里按 case_id 分支。
+- 小眠配音：`python3 tools/xm_voice.py manifest` 扫描全部台词，`chunks` 生成待录批次，`split` 切分成单句，`check` 看覆盖率。
 - 角色行走动画帧、标题/诊所的 AI 背景图、更多配音。
 - 比赛视频：`0:00` 崩坏的梦 → `0:30` 小眠分析 → `1:00` 编辑器改变梦 → `2:00` 同一张地图三种形态 → `3:00` 制作流程（AI 生成 → 脚本处理 → Godot）。

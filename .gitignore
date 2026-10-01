@@ -8,3 +8,8 @@ exports/
 # python
 __pycache__/
 build/
+
+# Local tooling and speech synthesis scratch (not game resources)
+.venv/
+.cache/
+art_src/voice_work/

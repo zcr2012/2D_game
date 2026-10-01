@@ -11,6 +11,8 @@ const Shadow := preload("res://scripts/shadow.gd")
 const Story := preload("res://scripts/story.gd")
 const StoryStreet := preload("res://scripts/story_street.gd")
 const StreetMap := preload("res://scripts/street_map.gd")
+const StoryStation := preload("res://scripts/story_station.gd")
+const StationMap := preload("res://scripts/station_map.gd")
 const Hud := preload("res://scripts/hud.gd")
 const TouchControls := preload("res://scripts/touch_controls.gd")
 
@@ -38,6 +40,7 @@ var touch = null            # on-screen controls (phones / touch screens)
 var hud
 var story
 var street = null           # StreetMap helper when the current dream is the Old Street
+var station = null         # StationMap helper for the shared future dream
 var post_mat: ShaderMaterial
 var rain: CPUParticles2D
 var sparkles: CPUParticles2D
@@ -71,6 +74,9 @@ func _ready() -> void:
 	if GS.case_id == "street":
 		street = StreetMap.new(self)
 		story = StoryStreet.new(self)
+	elif GS.case_id == "station":
+		station = StationMap.new(self)
+		story = StoryStation.new(self)
 	else:
 		story = Story.new(self)
 
@@ -97,6 +103,10 @@ func _ready() -> void:
 	if street != null:
 		street.build()
 		ground.texture = tex("street_ground_" + GS.stage())
+		ground.region_enabled = false
+	elif station != null:
+		station.build()
+		ground.texture = tex("station_ground_" + GS.stage())
 		ground.region_enabled = false
 	else:
 		match GS.stage():
@@ -240,6 +250,9 @@ const FRAG_COLORS := {
 	"st_joy": Color(1.0, 0.86, 0.3), "st_sad": Color(0.45, 0.7, 1.0),
 	"st_anger": Color(1.0, 0.35, 0.35), "st_fear": Color(0.7, 0.45, 1.0),
 	"st_regret": Color(0.55, 0.9, 0.8),
+	"sp_joy": Color(1.0, 0.86, 0.3), "sp_sad": Color(0.45, 0.7, 1.0),
+	"sp_anger": Color(1.0, 0.35, 0.35), "sp_fear": Color(0.7, 0.45, 1.0),
+	"sp_regret": Color(0.55, 0.9, 0.8),
 }
 
 
@@ -707,6 +720,17 @@ func _fx_targets() -> Dictionary:
 	var wave: float = [0.0, 0.7, 1.6, 2.4][r]
 	var vig: float = 0.25 + [0.0, 0.05, 0.2, 0.6][r]
 	match GS.stage():
+		"orbit":
+			if ta < 0.2:
+				tint = Color(0.85, 0.98, 1.1)
+				ta = 0.15
+		"drift":
+			wave += 0.2
+		"genesis":
+			wave += 0.15
+			if ta < 0.2:
+				tint = Color(0.95, 0.85, 1.1)
+				ta = 0.2
 		"summer":
 			if ta < 0.2:
 				tint = Color(1.1, 1.0, 0.86)
@@ -786,10 +810,15 @@ func _apply_fx(instant := false) -> void:
 			c.modulate = Color(1.0, 0.3, 0.3, 1.0) if GS.emotion == "anger" else Color(1, 1, 1, 0.6)
 	if street != null:
 		street.apply_fx()
+	if station != null:
+		station.apply_fx()
 	_sync_shadows()
 
 
 func _sync_shadows() -> void:
+	if station != null:
+		station.sync_shadows()
+		return
 	if street != null:
 		street.sync_shadows()
 		return
@@ -891,6 +920,8 @@ func _process(delta: float) -> void:
 			GS.change_stability(-drain * delta)
 	if street != null:
 		street.process(delta)
+	if station != null:
+		station.process(delta)
 	_update_lights()
 	_update_prompt()
 
@@ -1001,7 +1032,7 @@ func on_caught(_s) -> void:
 	flash(Color(0.4, 0.0, 0.1), 0.9)
 	shake(8.0)
 	GS.change_stability(-12.0)
-	GS.emit_signal("toast", "被大人影子抓住了……稳定度 -12")
+	GS.emit_signal("toast", "被维修机器人召回入口 · 稳定度 -12" if station != null else "被大人影子抓住了……稳定度 -12")
 	player.position = spawn
 	xm.position = spawn
 	for s in shadows:

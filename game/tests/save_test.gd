@@ -69,6 +69,16 @@ func _ready() -> void:
 	check(GS.last_goto == "clinic", "Continue opens the clinic at the saved next dive")
 	GS.test_mode = false
 
+	GS.new_game()
+	GS.start_case("station")
+	GS.visit = 2
+	GS.fragments = {"sp_photo": true, "sp_chart": true}
+	GS.flags = {"briefed_station": true, "sp_blueprint": "library"}
+	GS.save_game()
+	GS.new_game()
+	check(GS.load_game() and GS.case_id == "station" and GS.stage() == "genesis", "restores a Space Station save at its third dive")
+	check(GS.has_frag("sp_chart") and GS.flags.get("sp_blueprint", "") == "library", "restores station fragments and the chosen blueprint")
+
 	var broken := FileAccess.open(GS.save_path, FileAccess.WRITE)
 	broken.store_string("{\"version\": 2, \"progress\": \"not an object\"}")
 	broken.close()

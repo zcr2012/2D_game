@@ -17,6 +17,9 @@ const SPEAKERS := {
 	"ld": {"name": "老灯", "portrait": "laodeng", "color": Color(1.0, 0.85, 0.45), "pitch": 0.6},
 	"fb": {"name": "福伯", "portrait": "fubo", "color": Color(0.9, 0.8, 0.7), "pitch": 0.85},
 	"sw": {"name": "苏晚", "portrait": "suwan", "color": Color(0.75, 0.8, 1.0), "pitch": 1.15},
+	"lz": {"name": "林舟", "portrait": "linzhou", "color": Color(0.6, 0.88, 1.0), "pitch": 1.1},
+	"xy": {"name": "星芽", "portrait": "xingya", "color": Color(0.9, 0.78, 1.0), "pitch": 1.25},
+	"bot": {"name": "园丁机器人", "portrait": "", "color": Color(0.7, 1.0, 0.82), "pitch": 1.4},
 	"np": {"name": "路人", "portrait": "", "color": Color(0.75, 0.75, 0.8), "pitch": 0.9},
 	"me": {"name": "你", "portrait": "player", "color": Color(0.7, 0.85, 1.0), "pitch": 1.0},
 	"sys": {"name": "", "portrait": "", "color": Color(0.8, 0.8, 0.9), "pitch": 1.0},
@@ -156,21 +159,75 @@ func _layout() -> void:
 
 
 # ------------------------------------------------------------------ public
-func say(who: String, text: String, voice := "") -> void:
+var _worded := RegEx.create_from_string("[\\x{4e00}-\\x{9fff}A-Za-z0-9]")
+
+## Voice ids missing for Xiaomian's fixed lines (filled during autoplay tests).
+var missing_voice: Array = []
+
+
+## `spoken` (xm only): null = voice the text itself; a String or an Array of
+## Strings = the device-neutral text(s) to voice; [] = no voice (live AI text).
+func _xm_ids(text: String, spoken) -> Array:
+	var parts: Array = []
+	if spoken == null:
+		parts = [text]
+	elif spoken is Array:
+		parts = spoken
+	else:
+		parts = [str(spoken)]
+	var ids: Array = []
+	for p in parts:
+		# composite hints ("base 还差：…" / "base 另外，…") are recorded in pieces
+		var pieces: Array = [str(p)]
+		for marker in [" 还差：", " 另外，"]:
+			var cut: Array = []
+			for piece in pieces:
+				var i: int = str(piece).find(marker)
+				if i > 0:
+					cut.append(str(piece).substr(0, i))
+					cut.append(str(piece).substr(i + 1))
+				else:
+					cut.append(piece)
+			pieces = cut
+		for piece in pieces:
+			if _worded.search(str(piece)) != null:      # "……" alone is not speech
+				ids.append(Audio.xm_id(str(piece)))
+	return ids
+
+
+func _play_line(who: String, text: String, voice: String, spoken) -> bool:
+	if who != "xm":
+		return Audio.voice(voice)
+	var ids := _xm_ids(text, spoken)
+	if ids.is_empty():
+		return false
 	if autoplay:
-		print("  [%s] %s%s" % [who, text.replace("\n", " / "), ("  (voice:%s %s)" % [voice, "ok" if ResourceLoader.exists("res://assets/audio/voice/%s.mp3" % voice) else "MISSING"]) if voice != "" else ""])
+		for id in ids:
+			if not Audio.has_voice(str(id)) and not missing_voice.has(id):
+				missing_voice.append(id)
+				print("  [voice MISSING] %s  %s" % [id, text.replace("\n", " / ")])
+		return false
+	return Audio.voice_seq(ids)
+
+
+func say(who: String, text: String, voice := "", spoken = null) -> void:
+	if autoplay:
+		_play_line(who, text, voice, spoken)
+		print("  [%s] %s%s" % [who, text.replace("\n", " / "), (("  (voice:%s %s)" % [voice, "ok" if ResourceLoader.exists("res://assets/audio/voice/%s.mp3" % voice) else "MISSING"]) if voice != "" and who != "xm" else "")])
 		await get_tree().process_frame
 		return
 	_open(who)
 	mode = "say"
 	_set_text(text)
-	_has_voice = Audio.voice(voice)
+	_has_voice = _play_line(who, text, voice, spoken)
 	await advanced
 	Audio.stop_voice()
 	_schedule_close()
 
 
 func choose(who: String, text: String, options: Array) -> int:
+	if who == "xm":
+		_has_voice = _play_line(who, text, "", null)
 	if autoplay:
 		var pick := -1
 		if autoplay_choices.size() > 0:
@@ -365,6 +422,7 @@ func _hover_focus(b: Button) -> void:
 
 func _on_choice(i: int) -> void:
 	if mode == "choose":
+		Audio.stop_voice()
 		chosen.emit(i)
 
 
