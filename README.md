@@ -218,6 +218,6 @@ godot --headless --path game res://tests/save_test.tscn      # 存档读写与�
 ## 下一步
 
 - 梦境三《太空站》已完成。代码：`station_map.gd`（地图）、`story_station.gd`（剧情）；其余在 `dream.gd` / `clinic.gd` / `ending.gd` 里按 case_id 分支。
-- 小眠配音：`python3 tools/xm_voice.py manifest` 扫描全部台词，`chunks` 生成待录批次，`split` 切分成单句，`check` 看覆盖率。
-- 角色行走动画帧、标题/诊所的 AI 背景图、更多配音。
+- 小眠配音：`python3 tools/xm_voice.py manifest` 扫描全部台词，`chunks` 生成待录批次，`split` 切分成单句，`check` 看覆盖率（目前 287/287 句已配音）。
+- 角色行走动画帧、标题/诊所的 AI 背景图。
 - 比赛视频：`0:00` 崩坏的梦 → `0:30` 小眠分析 → `1:00` 编辑器改变梦 → `2:00` 同一张地图三种形态 → `3:00` 制作流程（AI 生成 → 脚本处理 → Godot）。
