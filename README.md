@@ -6,7 +6,8 @@
 **类型**：2D 半开放探索 + 解谜 + 轻 RPG + AI 叙事
 **引擎**：Godot 4.3+（GL Compatibility 渲染器）
 **平台**：Windows · Linux · Android（手机 / 平板）；iOS 代码已适配，打包需要 Mac
-**当前版本**：垂直切片 Demo，梦境一《糖果城市》（约 15 分钟，3 次潜入，3 个结局）
+**当前版本**：垂直切片 Demo，两个可玩的梦境：《糖果城市》（童年）和《梧桐巷》（遗憾），每个约 15 分钟、3 次潜入、3 个结局；第三个梦《太空站》制作中
+**AI 接口**：Claude / OpenAI / Gemini / DeepSeek / Kimi / 通义千问 / 智谱 / OpenRouter / Ollama 等，任意兼容地址都可以自定义（见下文）
 
 ---
 
@@ -45,7 +46,7 @@
 | 切到后台 | — | 来电 / 按 Home 自动暂停 |
 | 返回键 | — | Android 返回键 = 暂停 / 关闭面板；在标题界面退出 |
 | 糖心的信 | 写到存档文件夹，结局有“打开所在文件夹” | 手机上看不到应用文件夹，结局直接『打开信』 |
-| AI 密钥 | 环境变量 / 配置文件 / 设置界面 | 设置界面里填写 |
+| AI 接口 | 环境变量 / 配置文件 / 设置界面 | 设置界面里选厂商、填 Key（自定义接口也能在手机上配） |
 
 标题、诊所、结局界面的内容在任何比例下都居中；梦里的镜头在宽屏上会多看到一点世界。所有面板都有 × 关闭按钮（鼠标和手指都能点）。
 
@@ -53,17 +54,35 @@
 
 ## 垂直切片包含什么
 
+### 梦境二：《梧桐巷》（遗憾）
+
+> 82 岁的退休修理工沈远，每晚都在梦里数梧桐巷里的行人，总是少一个，数不对就不肯醒。委托人是他的女儿：“可我们家一直就我们两个人啊。”
+
+同一条街进入 3 次：**夏夜老街 → 褪色之街 → 回声之街**。它复用糖果城市的全部系统（编辑器、碎片、小眠、三结局），但谜题换了一套：
+
+| 阶段 | 玩法 |
+|---|---|
+| 夏夜老街 | 在街上自由探索：福伯的面（快乐）、夜里亮灯的窗户（录音）、夜里发光的积水（悲伤）、花盆下的老照片；和路灯**老灯**聊聊，对梦境核心做出选择。 |
+| 褪色之街 | 街中间裂开了：把现实程度调到**幻想增强**，路灯飘起来搭成光桥；**愤怒**震开生锈的卷帘门和铁闸（修理铺 → 恐惧碎片；照相馆 + 照片 → 遗憾碎片）；**快乐**让没有脸的路人想起自己是谁；**疯狂梦境**里车站的时刻表才看得清；**噩梦**里被遗忘的人会追你。 |
+| 回声之街 | 街是闭合的，往东走会被雾送回起点。用编辑器找到三个“回声”：**夜晚**（老灯的账本）、**悲伤**（积水里的倒影）、**疯狂梦境**（路牌改写成『苏晚巷』），雾散开，去车站见沈远，最后和老灯谈。 |
+
+梦之人格**老灯**是一盏会数人的路灯，它想用沈远残存的记忆碎片把他去世的妻子“重建”出来。三个结局：熄灭老灯（完美修复，沈远也会忘了她）/ 留下缺口，让他说出那句没说出口的“路上小心”（梦境守护）/ 把她“造”出来（新梦创造）。结局会在存档文件夹里留下 `老灯的账本.txt`。
+
+**怎么玩到它**：通关《糖果城市》后，结局界面会出现“下一个梦境”按钮，标题界面的“继续”也会接着当前的梦。想直接试玩：**设置 → 解锁全部梦境（测试）**，标题上会多出“梦境选择”。
+
+### 糖果城市与通用系统
+
 | 设计文档 | 实现 |
 |---|---|
 | **梦境不是固定关卡** | 同一张地图进入 3 次，每次都不同：**甜蜜童话 → 融化之城 → 巨大迷宫**。离开时编辑器的状态会作为“残留”带进下一次（比如上次用了愤怒，地上的裂缝还在）。 |
 | **梦境编辑器（重点）** | 在整个世界实时生效：<br>• **时间**：夜晚会让隐藏记忆发光现身（书包、日记、迷宫里的路灯）<br>• **情绪**：快乐（色彩更艳，糖浆结晶成可行走的糖玻璃）/ 悲伤（下雨，雨水冲出指路的脚印）/ 愤怒（建筑碎裂、画面震动，可以击碎有裂缝的巧克力墙）<br>• **现实程度**：梦境稳定 → 幻想增强（软糖桥浮现）→ 疯狂梦境（道具扭动，隐藏的声音出现，稳定度持续流失）→ 噩梦（大人影子追逐）<br>每次修改都会消耗**梦境稳定度**，稳定度归零梦境崩塌，被强制唤醒。 |
 | **修复 vs. 增强** | 每处异常数据（错误记忆 / 被遗忘的人 / 虚假的幻想 / AI异常）和每次的梦境核心，都可以选 **修复 / 守护 / 增强**。 |
 | **梦之人格（AI 作为机制）** | **糖心**：梦里长出来的 AI 人格。它记得你上次对它做了什么，最后一次还会打破第四面墙（念出你电脑的用户名，并在你的存档文件夹里留下一封信）。你可以**自由输入**问题问它。 |
-| **碎片收集** | 3 个记忆碎片 + 5 个情绪碎片。情绪碎片会**解锁编辑器选项**（快乐/悲伤/愤怒；恐惧解锁疯狂与噩梦），照片解锁隐藏地点（奶奶的糖果店），遗憾解锁特殊剧情。 |
+| **碎片收集** | 每个梦 3 个记忆碎片 + 5 个情绪碎片（共 16 个）。情绪碎片会**解锁编辑器选项**（快乐/悲伤/愤怒；恐惧解锁疯狂与噩梦），照片解锁隐藏地点（奶奶的糖果店），遗憾解锁特殊剧情。 |
 | **小眠养成** | 修复让它变得**怀疑**，守护让它变得**温柔**，增强让它变得**好奇**。它的台词、诊所里的对话和结局都会随之变化；如果它足够“怀疑”，会在你选择删除糖心时出面阻止。 |
 | **三个结局** | 完美修复者 / 梦境守护者 / 新梦创造者（最后这个需要足够多的“增强”）。 |
 | **美术方案** | AI 生成的像素角色 + “Blender 渲染风格”的 3D 道具，经脚本抠图、裁切、缩放、减色后变成像素素材；地面是预渲染的整张地图。 |
-| **AI 配音** | 小眠、糖心的 10 句关键台词已配音（`game/assets/audio/voice/`），其余台词用打字机音效。 |
+| **AI 配音** | 糖果城市：糖心的 4 句关键台词；梧桐巷：老灯、沈远、福伯、苏晚的关键台词。小眠的配音暂时撤下，等音色定稿后统一重做（备份在 `art_src/voice_xm_backup/`）（清单见 [`art_src/VOICE.md`](art_src/VOICE.md)）。文件在 `game/assets/audio/voice/<台词id>.mp3`，缺文件的台词自动退回打字机音效。 |
 
 ## 打包成 exe / Linux 程序 / APK
 
@@ -84,16 +103,26 @@ APK 是 debug 签名，自己玩、给朋友测都够用；上架应用商店需
 3. Android 额外需要：安装 JDK 17 和 Android SDK，然后在 **编辑器设置 → 导出 → Android** 里填路径（Godot 会自动生成 debug 密钥）。
 4. iOS：需要一台装了 Xcode 的 Mac 和 Apple 开发者账号，在 Mac 上添加 iOS 预设导出即可，代码不用改。
 
-### 可选：接入实时 AI 叙事
+### 可选：接入实时 AI 叙事（多接口 · 自定义厂商）
 
-游戏**完全可以离线运行**，所有 AI 相关的地方都有预写文本兜底。接入后，**糖心的自由对话**和**小眠的梦境分析**会根据你当前的游戏状态实时生成。最简单的方式是在 **标题 → 设置 → AI 密钥** 里粘贴（手机也能用），或者：
+游戏**完全可以离线运行**，所有 AI 相关的地方都有预写文本兜底。接入后，**梦之人格（糖心 / 老灯）的自由对话**和**小眠的梦境分析**会根据你当前的游戏状态实时生成。
 
-```ini
-; user://ai_config.cfg   （也可以直接设置环境变量 ANTHROPIC_API_KEY）
-[anthropic]
-api_key="sk-ant-..."
-model="claude-sonnet-4-5"
-```
+在 **标题 / 暂停 → 设置 → AI 接口设置…** 里配置（鼠标、触屏、手柄都能用）：
+
+- **厂商预设**（填 Key 即可）：Anthropic Claude、OpenAI、Google Gemini、DeepSeek、Moonshot Kimi、阿里云百炼（通义千问）、智谱 GLM、SiliconFlow、OpenRouter，以及本地的 Ollama、LM Studio（不需要 Key）。
+- **自定义接口**：点“＋ 添加自定义接口”，自己选协议、填地址、模型、Key，还可以加请求头和额外的 JSON 请求体（比如 `{"enable_thinking": false}`）、改 `max_tokens` 参数名、温度、超时。任何 OpenAI 兼容的中转 / 自建服务都能接。
+- **“测试连接”**按钮会发一条真实请求并显示结果或错误原因；“当前使用”决定游戏用哪一个，选“离线”则只用预写文本。
+
+| 协议（`type`） | 请求 | 认证 |
+|---|---|---|
+| `openai`（Chat Completions，绝大多数国产 / 本地服务） | `POST {base}/chat/completions` | `Authorization: Bearer` |
+| `openai_responses` | `POST {base}/responses` | `Authorization: Bearer` |
+| `anthropic`（Claude） | `POST {base}/v1/messages` | `x-api-key` + `anthropic-version` |
+| `gemini` | `POST {base}/models/{model}:generateContent` | `x-goog-api-key` |
+
+也可以不用界面，直接用环境变量（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY`、`DEEPSEEK_API_KEY`、`MOONSHOT_API_KEY`、`DASHSCOPE_API_KEY`、`ZHIPU_API_KEY`、`SILICONFLOW_API_KEY`、`OPENROUTER_API_KEY`），并用 `DREAM_AI_PROVIDER=<厂商id>` 指定使用哪个。配置写在 `user://ai_providers.json`（旧版 `ai_config.cfg` 会自动迁移）。
+
+> ⚠️ Key 以**明文**保存在本机的 `user://ai_providers.json` 里，请不要把这个文件发给别人或提交到 Git。
 
 `user://` 在 Windows 上对应 `%APPDATA%\Godot\app_userdata\梦境修复师 Dream Repair\`。
 
@@ -104,15 +133,19 @@ model="claude-sonnet-4-5"
 ```
 game/                      Godot 项目（打开 game/project.godot）
   autoload/
-    gs.gd                  全局状态：潜入次数、碎片、分数、小眠性格、编辑器状态、存档、键位（键盘 + 手柄）
+    gs.gd                  全局状态：当前梦境、每个梦的进度、碎片、分数、小眠性格、编辑器状态、存档、键位（键盘 + 手柄）
     platform.gd            平台适配：设备 / 输入方式检测、按键提示文字、安全区、全屏、返回键、后台暂停、设置存档
     dialog.gd              立绘对话框：await say / choose / ask_text，支持配音
     audio.gd               音乐淡入淡出、音效、配音、雨声
-    ai.gd                  可选的 Anthropic API 接入（糖心对话、小眠分析）
+    ai.gd                  可选的多协议 LLM 接入（OpenAI / Responses / Claude / Gemini + 自定义厂商）
   scenes/                  最简 .tscn（场景树在代码里搭建）
   scripts/
-    dream.gd               地图构建（3 个阶段）、编辑器效果、互动、影子、崩塌、唤醒
-    story.gd               全部剧情：事件、分支、异常数据、核心选择、结局
+    cases.gd               每个梦的静态数据：名字、阶段、音乐、委托文案、人格提示词、编辑器说明
+    dream.gd               通用梦境场景：编辑器效果、互动、影子、崩塌、唤醒；糖果城市的地图构建
+    story.gd               《糖果城市》剧情：事件、分支、异常数据、核心选择、结局
+    street_map.gd          《梧桐巷》地图：街道、裂缝与光桥、回声之雾、被遗忘的人
+    story_street.gd        《梧桐巷》剧情：老灯、沈远、福伯、三个回声、三个结局
+    ai_panel.gd            AI 接口设置面板（厂商预设 / 自定义接口 / 测试连接）
     hud.gd                 HUD、梦境编辑器面板、碎片图鉴、暂停菜单、设置
     touch_controls.gd      触屏：浮动摇杆 + 右侧按钮（多点触控）
     ui_util.gd             共用 UI：居中舞台、× 关闭按钮、设置面板
@@ -121,7 +154,9 @@ game/                      Godot 项目（打开 game/project.godot）
   shaders/
     dream_post.gdshader    全屏：情绪调色、现实扭曲/色差/故障、夜晚光照
     nebula.gdshader        标题 / 诊所 / 结局背景
-  tests/smoke.gd           无头自动游玩测试（完整三次潜入 + 结局）
+  tests/smoke.gd           无头自动游玩测试：《糖果城市》（完整三次潜入 + 结局）
+  tests/smoke_street.gd    无头自动游玩测试：《梧桐巷》（三次潜入、光桥、卷帘门、三个回声、结局）
+  tests/ai_test.gd         各 AI 协议的请求 / 响应解析、自定义接口、设置面板、梦境解锁规则（不联网）
   tests/platform_test.gd   平台测试：5 种屏幕比例的布局、触屏 / 手柄 / 键盘、返回键、输入框
   export_presets.cfg       导出预设：Windows / Linux / Android
 .github/workflows/         GitHub Actions：测试 + 自动打包三个平台
@@ -141,6 +176,7 @@ pip install pillow numpy
 python3 tools/process_assets.py            # 处理 art_src/raw/ 里的全部 AI 原图
 python3 tools/process_assets.py carousel   # 只处理某一个
 python3 tools/procedural_assets.py         # 重新生成程序化素材和音频
+python3 tools/procedural_assets.py street  # 只重新生成《梧桐巷》的地面 / 道具 / 音乐
 ```
 
 替换素材：把新的 AI 图（纯绿 `#00FF00` 背景）放进 `art_src/raw/<名字>.png`，再运行 `process_assets.py`。目标尺寸和调色板大小在脚本顶部的 `ASSETS` 表里；需要无缝拼接的砖块放在 `TILES` 表里（拉伸到精确尺寸、边缘补成不透明）。提示词和规则见 [`art_src/PROMPTS.md`](art_src/PROMPTS.md)。目前还是程序化生成、可以换成 AI 图的有：`cake`、`schoolbag`、`gumdrop`、碎片图标。
@@ -149,7 +185,9 @@ python3 tools/procedural_assets.py         # 重新生成程序化素材和音�
 
 ```bash
 godot --headless --path game --import
-godot --headless --path game res://tests/smoke.tscn          # 完整游玩
+godot --headless --path game res://tests/smoke.tscn          # 《糖果城市》完整游玩
+godot --headless --path game res://tests/smoke_street.tscn   # 《梧桐巷》完整游玩
+godot --headless --path game res://tests/ai_test.tscn        # AI 协议 + 梦境系统
 godot --headless --path game res://tests/platform_test.tscn  # 平台适配
 ```
 
@@ -159,7 +197,7 @@ godot --headless --path game res://tests/platform_test.tscn  # 平台适配
 
 ## 下一步
 
-- 梦境二《老街》（遗憾）：老人梦里“少了一个人”（设计文档里的妻子）。
-- 梦境三《太空站》（未来）。
+- 梦境三《太空站》（未来）：`cases.gd` 里已经占位；照着 `street_map.gd` + `story_street.gd` 加一张地图和一份剧情，再在 `dream.gd` 的 `_ready` 里接上就行。
+- 小眠的配音（两个梦共 12 句）等音色定稿后统一重做，清单见 `art_src/VOICE.md`。
 - 角色行走动画帧、标题/诊所的 AI 背景图、更多配音。
 - 比赛视频：`0:00` 崩坏的梦 → `0:30` 小眠分析 → `1:00` 编辑器改变梦 → `2:00` 同一张地图三种形态 → `3:00` 制作流程（AI 生成 → 脚本处理 → Godot）。

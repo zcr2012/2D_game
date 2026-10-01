@@ -215,6 +215,7 @@ func load_settings() -> void:
 	touch_pref = str(cfg.get_value("input", "touch_ui", touch_pref))
 	GS.settings["voice"] = bool(cfg.get_value("audio", "voice", GS.settings["voice"]))
 	GS.settings["music_volume"] = float(cfg.get_value("audio", "music_volume", GS.settings["music_volume"]))
+	GS.settings["unlock_all"] = bool(cfg.get_value("game", "unlock_all", GS.settings["unlock_all"]))
 
 
 func save_settings() -> void:
@@ -225,4 +226,5 @@ func save_settings() -> void:
 	cfg.set_value("input", "touch_ui", touch_pref)
 	cfg.set_value("audio", "voice", GS.settings["voice"])
 	cfg.set_value("audio", "music_volume", GS.settings["music_volume"])
+	cfg.set_value("game", "unlock_all", GS.settings["unlock_all"])
 	cfg.save(SETTINGS_PATH)

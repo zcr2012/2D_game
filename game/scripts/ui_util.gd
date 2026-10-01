@@ -150,31 +150,38 @@ static func settings_box(parent: Control) -> VBoxContainer:
 	sl.drag_ended.connect(func(_c: bool): Plat.save_settings())
 	mh.add_child(sl)
 
-	# live AI narration key (phones have no environment variables / easy file access)
+	var ut := CheckButton.new()
+	ut.text = "解锁全部梦境（测试用）"
+	ut.button_pressed = bool(GS.settings.get("unlock_all", false))
+	ut.toggled.connect(_set_unlock)
+	v.add_child(ut)
+
+	# live AI narration: several vendors / custom endpoints (see ai_panel.gd)
 	var ah := HBoxContainer.new()
+	ah.add_theme_constant_override("separation", 10)
 	v.add_child(ah)
 	var al := Label.new()
-	al.text = "AI 密钥"
+	al.text = "AI 叙事"
 	al.custom_minimum_size = Vector2(150, 0)
 	ah.add_child(al)
-	var key := LineEdit.new()
-	key.secret = true
-	key.placeholder_text = "Anthropic API Key（可不填）"
-	key.text = AI.api_key
-	key.custom_minimum_size = Vector2(280, 48)
-	ah.add_child(key)
 	var st := Label.new()
 	st.text = AI.status_text()
 	st.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	st.custom_minimum_size = Vector2(430, 0)
 	st.modulate = Color(0.5, 0.95, 1.0, 0.8)
-	var save := Button.new()
-	save.text = "保存"
-	save.custom_minimum_size = Vector2(90, 48)
-	save.pressed.connect(_save_ai.bind(key, st))
-	ah.add_child(save)
+	var ab := Button.new()
+	ab.text = "AI 接口设置…（多厂商 / 自定义）"
+	ab.custom_minimum_size = Vector2(280, 48)
+	ab.pressed.connect(_open_ai.bind(v, st))
+	ah.add_child(ab)
 	v.add_child(st)
 	return v
+
+
+static func _open_ai(parent: Node, status: Label) -> void:
+	var panel = load("res://scripts/ai_panel.gd").new()
+	parent.add_child(panel)
+	panel.closed.connect(func(): status.text = AI.status_text())
 
 
 static func _set_voice(on: bool) -> void:
@@ -182,6 +189,6 @@ static func _set_voice(on: bool) -> void:
 	Plat.save_settings()
 
 
-static func _save_ai(key: LineEdit, status: Label) -> void:
-	AI.configure(key.text)
-	status.text = AI.status_text()
+static func _set_unlock(on: bool) -> void:
+	GS.settings["unlock_all"] = on
+	Plat.save_settings()

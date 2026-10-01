@@ -9,6 +9,8 @@ const Follower := preload("res://scripts/follower.gd")
 const Interactable := preload("res://scripts/interactable.gd")
 const Shadow := preload("res://scripts/shadow.gd")
 const Story := preload("res://scripts/story.gd")
+const StoryStreet := preload("res://scripts/story_street.gd")
+const StreetMap := preload("res://scripts/street_map.gd")
 const Hud := preload("res://scripts/hud.gd")
 const TouchControls := preload("res://scripts/touch_controls.gd")
 
@@ -35,6 +37,7 @@ var camera: Camera2D
 var touch = null            # on-screen controls (phones / touch screens)
 var hud
 var story
+var street = null           # StreetMap helper when the current dream is the Old Street
 var post_mat: ShaderMaterial
 var rain: CPUParticles2D
 var sparkles: CPUParticles2D
@@ -65,7 +68,11 @@ var _t := 0.0
 # ================================================================== setup
 func _ready() -> void:
 	GS.begin_dive()
-	story = Story.new(self)
+	if GS.case_id == "street":
+		street = StreetMap.new(self)
+		story = StoryStreet.new(self)
+	else:
+		story = Story.new(self)
 
 	ground = Sprite2D.new()
 	ground.texture = load("res://assets/sprites/ground.png")
@@ -87,18 +94,23 @@ func _ready() -> void:
 	world.y_sort_enabled = true
 	add_child(world)
 
-	match GS.stage():
-		"sweet": _build_town(false)
-		"melting": _build_town(true)
-		_: _build_maze()
-
-	if GS.stage() == "maze":
-		ground.region_rect = Rect2(Vector2.ZERO, world_size)
-		ground.modulate = Color(0.86, 0.8, 0.95)
-	else:
-		# pre-baked town ground with roads matching this layout
-		ground.texture = tex("town_ground_melted" if GS.stage() == "melting" else "town_ground")
+	if street != null:
+		street.build()
+		ground.texture = tex("street_ground_" + GS.stage())
 		ground.region_enabled = false
+	else:
+		match GS.stage():
+			"sweet": _build_town(false)
+			"melting": _build_town(true)
+			_: _build_maze()
+
+		if GS.stage() == "maze":
+			ground.region_rect = Rect2(Vector2.ZERO, world_size)
+			ground.modulate = Color(0.86, 0.8, 0.95)
+		else:
+			# pre-baked town ground with roads matching this layout
+			ground.texture = tex("town_ground_melted" if GS.stage() == "melting" else "town_ground")
+			ground.region_enabled = false
 	cracks.region_rect = Rect2(Vector2.ZERO, world_size)
 	_build_bounds()
 
@@ -146,7 +158,7 @@ func _ready() -> void:
 	GS.editor_changed.connect(_on_editor_changed)
 	GS.collapsed.connect(_on_collapsed)
 	_apply_fx(true)
-	Audio.music({"sweet": "sweet", "melting": "melting", "maze": "maze"}[GS.stage()])
+	Audio.music(str(GS.case_data()["music"][GS.stage()]))
 	_run(story.intro)
 
 
@@ -225,6 +237,9 @@ const FRAG_COLORS := {
 	"emo_joy": Color(1.0, 0.86, 0.3), "emo_sad": Color(0.45, 0.7, 1.0),
 	"emo_anger": Color(1.0, 0.35, 0.35), "emo_fear": Color(0.7, 0.45, 1.0),
 	"emo_regret": Color(0.55, 0.9, 0.8),
+	"st_joy": Color(1.0, 0.86, 0.3), "st_sad": Color(0.45, 0.7, 1.0),
+	"st_anger": Color(1.0, 0.35, 0.35), "st_fear": Color(0.7, 0.45, 1.0),
+	"st_regret": Color(0.55, 0.9, 0.8),
 }
 
 
@@ -692,6 +707,20 @@ func _fx_targets() -> Dictionary:
 	var wave: float = [0.0, 0.7, 1.6, 2.4][r]
 	var vig: float = 0.25 + [0.0, 0.05, 0.2, 0.6][r]
 	match GS.stage():
+		"summer":
+			if ta < 0.2:
+				tint = Color(1.1, 1.0, 0.86)
+				ta = 0.22
+		"fading":
+			# the street is losing its colour; joy brings some back
+			sat *= 0.3 if GS.emotion != "happy" else 0.6
+			vig += 0.1
+		"echo":
+			wave += 0.25
+			vig += 0.2
+			if ta < 0.2:
+				tint = Color(0.8, 0.88, 1.15)
+				ta = 0.25
 		"melting":
 			wave += 0.35
 			if ta < 0.2:
@@ -755,10 +784,15 @@ func _apply_fx(instant := false) -> void:
 		if is_instance_valid(w):
 			var c := w.get_node("Cracks") as Sprite2D
 			c.modulate = Color(1.0, 0.3, 0.3, 1.0) if GS.emotion == "anger" else Color(1, 1, 1, 0.6)
+	if street != null:
+		street.apply_fx()
 	_sync_shadows()
 
 
 func _sync_shadows() -> void:
+	if street != null:
+		street.sync_shadows()
+		return
 	var want := 0
 	var spd := 50.0
 	if astar:
@@ -855,6 +889,8 @@ func _process(delta: float) -> void:
 		var drain: float = [0.0, 0.0, 0.45, 0.9][GS.reality]
 		if drain > 0.0:
 			GS.change_stability(-drain * delta)
+	if street != null:
+		street.process(delta)
 	_update_lights()
 	_update_prompt()
 

@@ -13,6 +13,8 @@ var _lines_box: VBoxContainer
 
 
 func _epilogue() -> Array:
+	if GS.case_id == "street":
+		return _epilogue_street()
 	var e := GS.ending
 	var out: Array = []
 	match e:
@@ -48,6 +50,40 @@ func _epilogue() -> Array:
 	return out
 
 
+func _epilogue_street() -> Array:
+	var out: Array = []
+	match GS.ending:
+		"perfect":
+			out = [
+				"老灯被熄灭了。梧桐巷恢复成了档案里的样子：整齐、明亮、没有一处错误。",
+				"沈远那天睡得很好。醒来的时候，他没有再数街上的人。",
+				"只是女儿沈念拿全家福给他看时，他看了很久，礼貌地问：『这位女士是……？』",
+			]
+			if GS.has_frag("st_regret"):
+				out.append("照相馆橱窗里那句没写完的『路上小——』，被系统当作损坏数据补全了。可已经没有人，听得懂它是对谁说的。")
+			out.append("世界很稳定。很多特殊的记忆，就这样安静地消失了。")
+		"guardian":
+			out = [
+				"你没有熄灭老灯，也没有把街修好。",
+				"这一次，路灯数对了：街上有几个人，它数出来，一个不多，一个不少——包括那个不在的人。",
+				"沈远在梦里的长椅上坐了很久，对着空着的那半边，轻轻说：『路上小心。』",
+				"第二天，他哭了。然后让沈念给他讲讲，她妈妈年轻时的样子。",
+			]
+			if GS.has_frag("st_radio"):
+				out.append("收音机后来被修好了。沙沙声里有人说：『老沈，下雨了，记得带伞。』这一次，他带了。")
+			out.append("修复所开始收到越来越多类似的委托。人类，开始学着和失去共处，而不是把它修掉。")
+		_:
+			out = [
+				"你和老灯一起，用沈远记得的每一点碎片，把苏晚『造』了出来。",
+				"她撑着伞，从街角走来，一步也没有迟到。她认得他，还问：『收音机修好了吗？』",
+			]
+			if GS.has_frag("st_regret") or GS.flag("s_knows_wife"):
+				out.append("她的脸，和照相馆里那张被剪掉半边的照片，一模一样。")
+			out.append("梧桐巷向所有失去了人的人敞开。有人说这是AI造的幻觉，可是住在这里的人，觉得它比现实更真实。")
+			out.append("新的梦境文明，从一盏会数人的路灯开始了。")
+	return out
+
+
 func _xm_line() -> String:
 	var t := GS.xm_trait()
 	if t == "doubt" and GS.ending == "perfect":
@@ -79,7 +115,7 @@ func _ready() -> void:
 	v.offset_top = 40
 	v.add_theme_constant_override("separation", 10)
 	root.add_child(v)
-	var a := U.label(v, info[0], 36, Color(1, 1, 1, 0.7))
+	var a := U.label(v, "《%s》 · %s" % [GS.case_name(), info[0]], 36, Color(1, 1, 1, 0.7))
 	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var t := U.label(v, info[1], 72, info[2])
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -89,7 +125,8 @@ func _ready() -> void:
 	_lines_box = VBoxContainer.new()
 	_lines_box.add_theme_constant_override("separation", 10)
 	v.add_child(_lines_box)
-	Audio.music("sweet" if GS.ending != "perfect" else "clinic")
+	var mus: Dictionary = GS.case_data()["music"]
+	Audio.music(str(mus[(GS.case_data()["stages"] as Array)[0]]) if GS.ending != "perfect" else "clinic")
 	_play(v)
 
 
@@ -109,21 +146,23 @@ func _play(v: VBoxContainer) -> void:
 
 	var stats := "修复 %d · 守护 %d · 增强 %d    碎片 %d / %d    小眠性格：%s" % [
 		GS.scores["repair"], GS.scores["protect"], GS.scores["enhance"],
-		GS.fragments.size(), GS.FRAGMENTS.size(), GS.trait_name()]
+		GS.frag_count(), GS.frag_ids().size(), GS.trait_name()]
 	var sl := U.label(v, stats, 24, Color(0.5, 0.95, 1.0))
 	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var lp: String = GS.flags.get("letter_path", "")
+	var lp: String = GS.flags.get(_letter_key(), "")
 	if lp != "":
+		var pname: String = str(GS.case_data()["persona"])
+		var who: String = str(Dialog.SPEAKERS[pname]["name"])
 		if Plat.is_mobile:
 			# phones hide app files from the user: hand the letter over in-game
-			var ll := U.label(v, "糖心在你的手机里留下了一封信。", 24, Color(1.0, 0.75, 0.9))
+			var ll := U.label(v, who + "在你的手机里留下了一封信。", 24, Color(1.0, 0.75, 0.9))
 			ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			var lb := HBoxContainer.new()
 			lb.alignment = BoxContainer.ALIGNMENT_CENTER
 			v.add_child(lb)
 			U.button(lb, "打开信", _show_letter, Vector2(260, 52))
 		else:
-			var ll := U.label(v, "糖心在你的电脑里留下了一封信：\n" + lp, 24, Color(1.0, 0.75, 0.9))
+			var ll := U.label(v, who + "在你的电脑里留下了一封信：\n" + lp, 24, Color(1.0, 0.75, 0.9))
 			ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			ll.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 			ll.custom_minimum_size = Vector2(1040, 0)
@@ -131,17 +170,41 @@ func _play(v: VBoxContainer) -> void:
 			lb.alignment = BoxContainer.ALIGNMENT_CENTER
 			v.add_child(lb)
 			U.button(lb, "打开所在文件夹", func(): OS.shell_show_in_file_manager(lp), Vector2(300, 52))
-	var th := U.label(v, "感谢游玩 · 《梦境修复师》垂直切片 Demo", 24, Color(1, 1, 1, 0.6))
+	var nxt := GS.next_case_id()
+	var tail := "感谢游玩 · 《梦境修复师》Demo"
+	if nxt == "" and GS.has_later_unavailable_case():
+		tail += "\n下一个梦境《太空站》制作中，敬请期待。"
+	var th := U.label(v, tail, 24, Color(1, 1, 1, 0.6))
 	th.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 16)
 	v.add_child(hb)
-	var b := U.button(hb, "回到标题", _to_title, Vector2(260, 52))
+	var b: Button
+	if nxt != "":
+		b = U.button(hb, "前往下一个委托：《%s》" % str(GS.case_data(nxt)["name"]), _next_case.bind(nxt), Vector2(520, 52))
+		U.button(hb, "回到标题", _to_title_keep, Vector2(220, 52))
+	else:
+		b = U.button(hb, "回到标题", _to_title, Vector2(260, 52))
 	b.grab_focus()
 
 
+func _letter_key() -> String:
+	return "letter_path" if GS.case_id == "candy" else "letter_path_" + GS.case_id
+
+
+func _next_case(id: String) -> void:
+	GS.start_case(id)
+	GS.save_game()
+	GS.goto("clinic")
+
+
+func _to_title_keep() -> void:
+	GS.goto("title")
+
+
 func _show_letter() -> void:
-	var f := FileAccess.open("user://给屏幕前的你.txt", FileAccess.READ)
+	var f := FileAccess.open(str(GS.case_data()["letter_file"]), FileAccess.READ)
 	var body := f.get_as_text() if f else "（信被梦吃掉了。）"
 	var p := PanelContainer.new()
 	p.anchor_left = 0.5
