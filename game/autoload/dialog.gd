@@ -156,6 +156,7 @@ func say(who: String, text: String, voice := "") -> void:
 		print("  [%s] %s%s" % [who, text.replace("\n", " / "), ("  (voice:%s %s)" % [voice, "ok" if ResourceLoader.exists("res://assets/audio/voice/%s.mp3" % voice) else "MISSING"]) if voice != "" else ""])
 		await get_tree().process_frame
 		return
+	_open(who)
 	mode = "say"
 	_set_text(text)
 	_has_voice = Audio.voice(voice)
@@ -177,6 +178,7 @@ func choose(who: String, text: String, options: Array) -> int:
 		print("  [%s] %s  -> choose %d: %s   (options: %s)" % [who, text, pick, labels[pick], " | ".join(labels)])
 		await get_tree().process_frame
 		return pick
+	_open(who)
 	mode = "choose"
 	_set_text(text)
 	_finish_typing()
@@ -219,6 +221,7 @@ func ask_text(who: String, text: String, placeholder := "") -> String:
 		print("  [%s] %s  -> input: %s" % [who, text, ans])
 		await get_tree().process_frame
 		return ans
+	_open(who)
 	mode = "input"
 	_set_text(text)
 	_finish_typing()
