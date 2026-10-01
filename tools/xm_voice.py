@@ -155,7 +155,7 @@ def load():
         return json.load(f)
 
 
-def cmd_chunks(limit=62):
+def cmd_chunks(limit=54):
     os.makedirs(WORK, exist_ok=True)
     # The speech service refuses batches longer than ~18 s of audio (about 60
     # characters), so each batch is a handful of short lines.
