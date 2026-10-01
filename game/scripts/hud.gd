@@ -6,6 +6,9 @@ const EMO_COLORS := {
 	"emo_joy": Color(1.0, 0.86, 0.3), "emo_sad": Color(0.45, 0.7, 1.0),
 	"emo_anger": Color(1.0, 0.35, 0.35), "emo_fear": Color(0.7, 0.45, 1.0),
 	"emo_regret": Color(0.55, 0.9, 0.8),
+	"st_joy": Color(1.0, 0.86, 0.3), "st_sad": Color(0.45, 0.7, 1.0),
+	"st_anger": Color(1.0, 0.35, 0.35), "st_fear": Color(0.7, 0.45, 1.0),
+	"st_regret": Color(0.55, 0.9, 0.8),
 }
 
 const U := preload("res://scripts/ui_util.gd")
@@ -117,7 +120,7 @@ func _ready() -> void:
 	_ai_label.offset_top = -34
 	_ai_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_ai_label.modulate = Color(0.5, 0.95, 1.0, 0.6)
-	_ai_label.text = "AI 叙事：在线" if AI.enabled else "AI 叙事：离线（预设文本）"
+	_ai_label.text = AI.short_status()
 	root.add_child(_ai_label)
 
 	# ---- prompt
@@ -186,7 +189,7 @@ func _on_fragment_added(_id: String) -> void:
 
 
 func refresh() -> void:
-	_title.text = "糖果城市 · 第%d次潜入 · %s" % [GS.dive(), GS.STAGE_NAMES[GS.stage()]]
+	_title.text = "%s · 第%d次潜入 · %s" % [GS.case_name(), GS.dive(), GS.stage_name()]
 	_stab_bar.value = GS.stability
 	_stab_label.text = "%d" % int(GS.stability)
 	var fill := _stab_bar.get_theme_stylebox("fill") as StyleBoxFlat
@@ -196,7 +199,7 @@ func refresh() -> void:
 		_stab_bar.add_theme_stylebox_override("fill", f)
 	_state_label.text = "%s · %s · %s" % [GS.TIME_NAMES[GS.time], GS.EMOTION_NAMES[GS.emotion], GS.REALITY_NAMES[GS.reality]]
 	_trait_label.text = "小眠性格：" + GS.trait_name()
-	_frag_label.text = "碎片 %d / %d" % [GS.fragments.size(), GS.FRAGMENTS.size()]
+	_frag_label.text = "碎片 %d / %d" % [GS.frag_count(), GS.frag_ids().size()]
 	if editor and editor.visible:
 		_refresh_editor()
 	if fragments_panel and fragments_panel.visible:
@@ -351,24 +354,21 @@ func _refresh_editor() -> void:
 
 
 func _describe() -> String:
+	var ed: Dictionary = GS.case_data()["editor"]
 	var lines: Array = []
 	match GS.time:
 		"day": lines.append("[color=#ffe9a8]白天[/color]：正常的梦境。")
-		"night": lines.append("[color=#9fb6ff]夜晚[/color]：梦主白天不敢想的事，会以[b]隐藏记忆[/b]的形式发光出现。")
+		"night": lines.append(str(ed["night"]))
 	match GS.emotion:
 		"calm": lines.append("[color=#dddddd]平静[/color]：没有情绪波动。")
-		"happy": lines.append("[color=#ffd84d]快乐[/color]：色彩鲜艳；流动的糖浆会结晶成可以行走的糖玻璃。")
-		"sad": lines.append("[color=#73b3ff]悲伤[/color]：世界下雨；雨水会冲出被踩过的足迹。")
-		"anger": lines.append("[color=#ff5c5c]愤怒[/color]：建筑破裂；有裂缝的巧克力墙可以被击碎。")
-	var rl := ["[color=#bfffea]梦境稳定[/color]：接近原始设定的梦。",
-		"[color=#d9a8ff]幻想增强[/color]：梦开始自由生长——漂浮的软糖会连成小路。",
-		"[color=#ff8fe0]疯狂梦境[/color]：逻辑松动，隐藏的声音浮现。稳定度会持续下降。",
-		"[color=#ff4f6a]噩梦[/color]：大人影子开始追逐。稳定度快速下降。"]
-	lines.append(rl[GS.reality])
+		"happy": lines.append(str(ed["happy"]))
+		"sad": lines.append(str(ed["sad"]))
+		"anger": lines.append(str(ed["anger"]))
+	lines.append(str((ed["reality"] as Array)[GS.reality]))
 	var locked: Array = []
-	for id in ["emo_joy", "emo_sad", "emo_anger", "emo_fear"]:
-		if not GS.has_frag(id):
-			locked.append(GS.FRAGMENTS[id]["name"].replace("情绪碎片：", ""))
+	for tag in ["joy", "sad", "anger", "fear"]:
+		if not GS.has_emo(tag):
+			locked.append({"joy": "快乐", "sad": "悲伤", "anger": "愤怒", "fear": "恐惧"}[tag])
 	if locked.size() > 0:
 		lines.append("[color=#8888aa]收集情绪碎片解锁更多选项：%s[/color]" % "、".join(locked))
 	return "\n".join(lines)
@@ -432,7 +432,7 @@ func _build_fragments(root: Control) -> void:
 func _refresh_fragments() -> void:
 	for c in _frag_list.get_children():
 		c.queue_free()
-	for id in GS.FRAGMENT_ORDER:
+	for id in GS.frag_ids():
 		var data: Dictionary = GS.FRAGMENTS[id]
 		var have := GS.has_frag(id)
 		var h := HBoxContainer.new()
@@ -500,7 +500,7 @@ func _build_pause(root: Control) -> void:
 
 
 func _build_settings(root: Control) -> void:
-	settings_panel = _centered_panel(root, Vector2(640, 470))
+	settings_panel = _centered_panel(root, Vector2(640, 560))
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	settings_panel.add_child(v)

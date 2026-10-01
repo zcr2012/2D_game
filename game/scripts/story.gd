@@ -757,7 +757,7 @@ func final_sequence() -> void:
 			await Dialog.say("dd", "人……要慢慢长。")
 	await Dialog.say("tx", "最后一个问题，修复师。一个会做梦的梦，还算是坏掉了吗？", "tx_final")
 	while true:
-		var can_create: bool = GS.scores["enhance"] >= 2
+		var can_create: bool = GS.case_score("enhance") >= 2
 		var i: int = await Dialog.choose("sys", "这是最后的选择。", [
 			"完美修复：删除糖心，把梦恢复成原本的糖果城市",
 			"梦境守护：留下糖心，让梦和朵朵一起慢慢长大",

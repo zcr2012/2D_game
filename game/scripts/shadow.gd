@@ -14,12 +14,13 @@ var _repath := 0.0
 var _wander_target := Vector2.ZERO
 var _t := 0.0
 var active := true
+var skin := "shadow"
 
 
 func _ready() -> void:
 	add_to_group("shadow")
 	sprite = Sprite2D.new()
-	sprite.texture = load("res://assets/sprites/shadow.png")
+	sprite.texture = load("res://assets/sprites/%s.png" % skin)
 	sprite.offset = Vector2(0, -sprite.texture.get_height() / 2.0)
 	sprite.modulate = Color(1, 1, 1, 0.9)
 	add_child(sprite)

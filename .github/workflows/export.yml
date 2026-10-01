@@ -20,11 +20,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Import
-        run: cd $PROJECT_PATH && godot --headless --import || true
-      - name: Smoke test (full playthrough)
-        run: cd $PROJECT_PATH && godot --headless res://tests/smoke.tscn
+        run: |
+          cd $PROJECT_PATH
+          godot --headless --import 2>&1 | tee /tmp/import.log || true
+          msg="$(grep -E "ERROR|SCRIPT|Parse Error" /tmp/import.log | head -25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+          if [ -n "$msg" ]; then echo "::warning title=import::${msg}"; fi
+      - name: Smoke test - Dream 1 Candy City (full playthrough)
+        if: always()
+        run: bash tools/ci_test.sh res://tests/smoke.tscn
+      - name: Smoke test - Dream 2 Old Street (full playthrough)
+        if: always()
+        run: bash tools/ci_test.sh res://tests/smoke_street.tscn
+      - name: AI protocols + dream system test
+        if: always()
+        run: bash tools/ci_test.sh res://tests/ai_test.tscn
       - name: Platform test (touch / layouts / gamepad)
-        run: cd $PROJECT_PATH && godot --headless res://tests/platform_test.tscn
+        if: always()
+        run: bash tools/ci_test.sh res://tests/platform_test.tscn
 
   export:
     name: Export ${{ matrix.name }}

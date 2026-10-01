@@ -4,6 +4,7 @@ extends Node
 const U := preload("res://scripts/ui_util.gd")
 
 var _float_nodes: Array = []
+var _cases_panel: PanelContainer
 var _settings: PanelContainer
 var _menu_first: Button
 var _t := 0.0
@@ -60,9 +61,14 @@ func _ready() -> void:
 	menu.add_theme_constant_override("separation", 12)
 	stage.add_child(menu)
 	var first := U.button(menu, "开始新的委托", _new_game)
-	if GS.has_save() and GS.load_game() and GS.visit < GS.MAX_DIVES:
-		first = U.button(menu, "继续（第 %d 次潜入）" % GS.dive(), _continue)
+	if GS.has_save() and GS.load_game():
+		var label := "继续：《%s》第 %d 次潜入" % [GS.case_name(), GS.dive()]
+		if GS.visit >= GS.MAX_DIVES:
+			label = "继续：《%s》已完成（查看结局）" % GS.case_name()
+		first = U.button(menu, label, _continue)
 		menu.move_child(first, 0)
+	if bool(GS.settings.get("unlock_all", false)):
+		U.button(menu, "梦境选择（测试：已解锁全部）", _open_cases)
 	U.button(menu, "设置", _open_settings)
 	if not Plat.is_ios:   # iOS apps must not quit themselves
 		U.button(menu, "退出", func(): get_tree().quit())
@@ -70,7 +76,7 @@ func _ready() -> void:
 	_menu_first = first
 	_build_settings(root)
 
-	var foot := U.label(stage, "垂直切片 Demo · 梦境一《糖果城市》   ·   " + AI.status_text(), 24, Color(1, 1, 1, 0.5))
+	var foot := U.label(stage, "Demo · 梦境一《糖果城市》· 梦境二《梧桐巷》   ·   " + AI.status_text(), 24, Color(1, 1, 1, 0.5))
 	foot.anchor_top = 1.0
 	foot.anchor_bottom = 1.0
 	foot.offset_left = 20
@@ -94,8 +100,8 @@ func _build_settings(root: Control) -> void:
 	_settings.anchor_bottom = 0.5
 	_settings.offset_left = -320
 	_settings.offset_right = 320
-	_settings.offset_top = -235
-	_settings.offset_bottom = 235
+	_settings.offset_top = -280
+	_settings.offset_bottom = 280
 	_settings.visible = false
 	root.add_child(_settings)
 	var v := VBoxContainer.new()
@@ -129,4 +135,36 @@ func _new_game() -> void:
 
 
 func _continue() -> void:
+	GS.goto("ending" if GS.visit >= GS.MAX_DIVES else "clinic")
+
+
+## Test helper (settings -> 解锁全部梦境): start a fresh game from any dream.
+func _open_cases() -> void:
+	var p := PanelContainer.new()
+	p.anchor_left = 0.5
+	p.anchor_right = 0.5
+	p.anchor_top = 0.5
+	p.anchor_bottom = 0.5
+	p.offset_left = -330
+	p.offset_right = 330
+	p.offset_top = -230
+	p.offset_bottom = 230
+	_cases_panel = p
+	get_child(0).get_child(0).add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	p.add_child(v)
+	var t := U.label(v, "选择梦境（开始新游戏）", 32)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for id in GS.Cases.ORDER:
+		var c: Dictionary = GS.case_data(id)
+		var b := U.button(v, "《%s》· %s\n%s" % [c["name"], c["tag"], c["blurb"]], _start_case.bind(id), Vector2(0, 92))
+		b.disabled = not GS.case_unlocked(id)
+	U.close_button(p, func(): p.queue_free())
+
+
+func _start_case(id: String) -> void:
+	GS.new_game()
+	GS.delete_save()
+	GS.start_case(id)
 	GS.goto("clinic")
