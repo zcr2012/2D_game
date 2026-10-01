@@ -91,16 +91,36 @@ const FRAGMENTS := {
 		"dream": "street", "emo": "regret", "type": "emotion", "name": "情绪碎片：遗憾",
 		"desc": "照相馆橱窗里最后一张照片的背面，有一行没写完的字：『路上小——』",
 		"effect": "解锁特殊剧情"},
+	# ---------------------------------------------------------- dream 3: Future
+	"sp_photo": {"dream": "station", "type": "memory", "name": "照片：发射前的一天",
+		"desc": "十二位乘员举着小花盆，导航终端上有一个笑脸。每个人的花，都不一样。", "effect": "照片 + 快乐：开启育种舱"},
+	"sp_voice": {"dream": "station", "type": "memory", "name": "录音：地球来信",
+		"desc": "『不用答应我每一天都顺利。有机会，就看看窗外，回来讲给我听。』", "effect": "解锁地球航标的线索"},
+	"sp_chart": {"dream": "station", "type": "memory", "name": "星图：没有终点的航线",
+		"desc": "一颗没有编号的星，旁边写着：『不知道，也可以出发。』", "effect": "解锁新梦文明；点亮未知航标"},
+	"sp_joy": {"dream": "station", "emo": "joy", "type": "emotion", "name": "情绪碎片：快乐",
+		"desc": "园丁今天浇过的小花。不知道明天的颜色，也可以照顾今天。", "effect": "解锁快乐；照片 + 快乐打开育种舱"},
+	"sp_sad": {"dream": "station", "emo": "sad", "type": "emotion", "name": "情绪碎片：悲伤",
+		"desc": "地球的来信，让舷窗上多了一颗小水珠。", "effect": "解锁悲伤；冷凝水映出地球"},
+	"sp_anger": {"dream": "station", "emo": "anger", "type": "emotion", "name": "情绪碎片：愤怒",
+		"desc": "维修卡写着『我不同意』。温柔，不等于一直同意。", "effect": "解锁愤怒；震开维护门"},
+	"sp_fear": {"dream": "station", "emo": "fear", "type": "emotion", "name": "情绪碎片：恐惧",
+		"desc": "十二个被藏起来的问题：『如果明天不完美呢？』", "effect": "解锁疯狂梦境和噩梦；星图浮现未知航线"},
+	"sp_regret": {"dream": "station", "emo": "regret", "type": "emotion", "name": "情绪碎片：遗憾",
+		"desc": "一粒没有发芽的种子。它也可以留在花园里。", "effect": "星芽会把未完成的愿望留在新梦中"},
+
 }
 const FRAGMENT_ORDER := ["mem_photo", "mem_diary", "mem_voice", "emo_joy", "emo_sad", "emo_anger", "emo_fear", "emo_regret",
-	"st_photo", "st_radio", "st_ticket", "st_joy", "st_sad", "st_anger", "st_fear", "st_regret"]
+	"st_photo", "st_radio", "st_ticket", "st_joy", "st_sad", "st_anger", "st_fear", "st_regret",
+	"sp_photo", "sp_voice", "sp_chart", "sp_joy", "sp_sad", "sp_anger", "sp_fear", "sp_regret"]
 
 const TIME_NAMES := {"day": "白天", "night": "夜晚"}
 const EMOTION_NAMES := {"calm": "平静", "happy": "快乐", "sad": "悲伤", "anger": "愤怒"}
 const REALITY_NAMES := ["梦境稳定", "幻想增强", "疯狂梦境", "噩梦"]
 const TRAIT_NAMES := {"naive": "懵懂", "warm": "温柔", "doubt": "怀疑", "curious": "好奇"}
 const STAGE_NAMES := {"sweet": "甜蜜童话", "melting": "融化之城", "maze": "巨大迷宫",
-	"summer": "夏夜老街", "fading": "褪色之街", "echo": "回声之街"}
+	"summer": "夏夜老街", "fading": "褪色之街", "echo": "回声之街",
+	"orbit": "晨光轨道", "drift": "失重花园", "genesis": "明日之海"}
 
 # ------------------------------------------------------------------ state
 var case_id := "candy"                 # the dream (commission) being played

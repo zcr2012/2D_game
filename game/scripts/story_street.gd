@@ -230,7 +230,7 @@ func ev_lamp() -> void:
 				await Dialog.say("ld", "……三十一、三十二、少一个。")
 				await Dialog.say("ld", "想见他，就过桥去。街断了，路灯可没断——让它们飘起来，不就行了？")
 				if GS.reality < 1:
-					await Dialog.say("xm", "幻想增强……会让路灯飘起来吗？打开梦境编辑器（%s）看看。" % Plat.k("editor"))
+					await Dialog.say("xm", "幻想增强……会让路灯飘起来吗？%s打开梦境编辑器看看。" % Plat.press("editor"), "", "幻想增强……会让路灯飘起来吗？%s打开梦境编辑器看看。" % "")
 			else:
 				if not GS.flag("v2_ld"):
 					await _lamp_v2()
@@ -267,7 +267,7 @@ func _lamp_v1() -> void:
 	objective("（可选）继续探索、收集碎片 · 准备好后回到老灯，对梦境核心做出选择")
 	if not GS.has_frag("st_sad"):
 		if GS.time != "night":
-			await Dialog.say("xm", "老灯说这条街夜里会想起事情。试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"))
+			await Dialog.say("xm", "老灯说这条街夜里会想起事情。试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"), "", "老灯说这条街夜里会想起事情。试试%s打开梦境编辑器，把时间调到『夜晚』？" % "")
 		else:
 			await Dialog.say("xm", "现在正是夜里。修理铺窗户亮着灯，东南边的积水也在发光，去看看吧。")
 
@@ -358,7 +358,7 @@ func _check_echoes() -> void:
 		objective("穿过雾，去车站和沈远谈谈")
 	else:
 		var n: int = int(GS.flag("e1")) + int(GS.flag("e2")) + int(GS.flag("e3"))
-		await Dialog.say("xm", "回声 %d / 3。" % n)
+		await Dialog.say("xm", "三个回声，已经找到了%d个。" % n)
 
 
 func ev_lap() -> void:
@@ -372,12 +372,12 @@ func ev_lap() -> void:
 			await Dialog.say("ld", "你在数圈吗？我也在数。到现在，你比他还有耐心。")
 		_:
 			if laps > 2 and laps % 3 == 0:
-				await Dialog.say("xm", "小提示：" + current_hint())
+				await Dialog.say("xm", "小提示：" + current_hint(), "", ["小提示。", Plat.speech_of(current_hint)])
 
 
 func ev_fracture() -> void:
 	await Dialog.say("xm", "街……从这里断开了。路面像是被人撕下去了一段，下面是空的。")
-	await Dialog.say("xm", "试试把现实程度调到『幻想增强』（%s）。路灯也许会飘起来，搭成一座桥。" % Plat.press("editor"))
+	await Dialog.say("xm", "试试%s打开梦境编辑器，把现实程度调到『幻想增强』。路灯也许会飘起来，搭成一座桥。" % Plat.press("editor"), "", "试试%s打开梦境编辑器，把现实程度调到『幻想增强』。路灯也许会飘起来，搭成一座桥。" % "")
 
 
 func ev_fubo() -> void:
@@ -675,7 +675,7 @@ func break_wall(w: Node2D) -> void:
 		else:
 			await Dialog.say("sys", "卷帘门锈死了，门缝里往外渗着一股冷气。像是一直在等一句气话。")
 		if GS.has_frag("st_anger"):
-			await Dialog.say("xm", "试试在梦境编辑器（%s）里，把情绪切换到『愤怒』。" % Plat.k("editor"))
+			await Dialog.say("xm", "试试%s打开梦境编辑器，把情绪切换到『愤怒』。" % Plat.press("editor"), "", "试试%s打开梦境编辑器，把情绪切换到『愤怒』。" % "")
 		else:
 			await Dialog.say("xm", "它好像需要一点很强的情绪。福伯那边，也许有线索。")
 		return
@@ -819,6 +819,7 @@ func current_hint() -> String:
 func ask_xm() -> void:
 	var hint := current_hint()
 	var text := ""
+	var spoken: Array = []      # live AI text has no recording: text only
 	if AI.enabled and GS.settings.get("ai_analysis", true):
 		GS.emit_signal("toast", "小眠正在分析梦境……")
 		text = await AI.analyze(hint)
@@ -830,7 +831,8 @@ func ask_xm() -> void:
 			"curious": "有意思！梦又变了一点点。",
 		}[GS.xm_trait()] as String
 		text = "%s\n[color=#7ff5ff]梦境：%s · 稳定度 %d%%[/color]\n%s" % [prefix, GS.editor_summary(), int(GS.stability), hint]
-	await Dialog.say("xm", text)
+		spoken = [prefix, Plat.speech_of(current_hint)]
+	await Dialog.say("xm", text, "", spoken)
 
 
 # ================================================================== finale

@@ -31,6 +31,9 @@ jobs:
       - name: Smoke test - Dream 2 Old Street (full playthrough)
         if: always()
         run: bash tools/ci_test.sh res://tests/smoke_street.tscn
+      - name: Smoke test - Dream 3 Space Station (full playthrough)
+        if: always()
+        run: bash tools/ci_test.sh res://tests/smoke_station.tscn
       - name: AI protocols + dream system test
         if: always()
         run: bash tools/ci_test.sh res://tests/ai_test.tscn

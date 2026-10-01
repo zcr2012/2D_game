@@ -143,13 +143,18 @@ func run() -> void:
 	GS.new_game()
 	check(GS.case_id == "candy" and GS.case_unlocked("candy"), "candy is available from the start")
 	check(not GS.case_unlocked("street"), "street is locked before candy is finished")
-	check(not GS.case_unlocked("station"), "station is not playable yet")
+	check(not GS.case_unlocked("station"), "station is locked before Old Street is finished")
 	GS.settings["unlock_all"] = true
-	check(GS.case_unlocked("street") and not GS.case_unlocked("station"), "unlock_all opens street only")
+	check(GS.case_unlocked("street") and GS.case_unlocked("station"), "unlock_all opens all three dreams")
 	GS.settings["unlock_all"] = false
 	GS.progress["candy"] = {"visit": 3, "core": [], "scores": {}, "ending": "guardian"}
 	check(GS.case_unlocked("street"), "street unlocks once candy is done")
 	check(GS.next_case_id() == "street", "next case after candy is street")
+	check(not GS.case_unlocked("station"), "station still needs Old Street")
+	GS.progress["street"] = {"visit": 3, "core": [], "scores": {}, "ending": "creator"}
+	check(GS.case_unlocked("station") and GS.next_case_id() == "station", "station unlocks once Old Street is done")
+	check(GS.case_data("station")["persona"] == "xy" and (GS.case_data("station")["stages"] as Array).size() == 3, "station case data is complete")
+	GS.progress.erase("street")
 	GS.start_case("street")
 	check(GS.stage() == "summer" and GS.case_name() == "梧桐巷" and GS.visit == 0, "street case starts fresh")
 	GS.fragments["st_joy"] = true

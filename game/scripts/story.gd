@@ -432,7 +432,7 @@ func _meet_tangxin_v1() -> void:
 	GS.set_flag("v1_tx")
 	objective("（可选）继续探索、收集碎片 · 准备好后回到钟楼，对梦境核心做出选择")
 	if not GS.has_frag("emo_sad"):
-		await Dialog.say("xm", "朵朵说，晚上城市会想起一些事……试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"))
+		await Dialog.say("xm", "朵朵说，晚上城市会想起一些事……试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"), "", "朵朵说，晚上城市会想起一些事……试试%s打开梦境编辑器，把时间调到『夜晚』？" % "")
 
 
 func _meet_tangxin_v2() -> void:
@@ -558,7 +558,7 @@ func break_wall(w: Node2D) -> void:
 	if GS.emotion != "anger":
 		await Dialog.say("sys", "巧克力墙很坚固，上面有细细的裂缝。也许需要一点……愤怒？")
 		if GS.has_frag("emo_anger"):
-			await Dialog.say("xm", "试试在梦境编辑器（%s）里把情绪切换到『愤怒』。" % Plat.k("editor"))
+			await Dialog.say("xm", "试试%s打开梦境编辑器，把情绪切换到『愤怒』。" % Plat.press("editor"), "", "试试%s打开梦境编辑器，把情绪切换到『愤怒』。" % "")
 		return
 	d.break_wall(w)
 	GS.emit_signal("toast", "巧克力墙碎了！")
@@ -683,6 +683,7 @@ func current_hint() -> String:
 func ask_xm() -> void:
 	var hint := current_hint()
 	var text := ""
+	var spoken: Array = []      # live AI text has no recording: text only
 	if AI.enabled and GS.settings.get("ai_analysis", true):
 		GS.emit_signal("toast", "小眠正在分析梦境……")
 		text = await AI.analyze(hint)
@@ -694,7 +695,8 @@ func ask_xm() -> void:
 			"curious": "有意思！梦又变了一点点。",
 		}[GS.xm_trait()] as String
 		text = "%s\n[color=#7ff5ff]梦境：%s · 稳定度 %d%%[/color]\n%s" % [prefix, GS.editor_summary(), int(GS.stability), hint]
-	await Dialog.say("xm", text)
+		spoken = [prefix, Plat.speech_of(current_hint)]
+	await Dialog.say("xm", text, "", spoken)
 
 
 # ================================================================== finale

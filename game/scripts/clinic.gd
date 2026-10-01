@@ -146,8 +146,10 @@ func _screen_w() -> float:
 	return get_viewport().get_visible_rect().size.x
 
 
-func _set_speech(t: String) -> void:
+func _set_speech(t: String, speak := true) -> void:
 	_speech.text = "[color=#7ff5ff]小眠：[/color]" + t
+	if speak and not GS.test_mode:
+		Audio.voice_seq([Audio.xm_id(t)])
 
 
 func _intro() -> void:
@@ -158,6 +160,9 @@ func _intro() -> void:
 	if GS.case_id == "street":
 		await _intro_street()
 		return
+	if GS.case_id == "station":
+		await _intro_station()
+		return
 	match GS.visit:
 		0:
 			if not GS.flag("briefed"):
@@ -167,15 +172,15 @@ func _intro() -> void:
 				await Dialog.say("xm", "早上好，修复师！……啊不对，现在是夜班。晚上好！今天的委托到了。")
 				await Dialog.say("xm", "梦主是一个叫朵朵的小女孩。她的梦『糖果城市』已经重复了二十七个晚上，而且每晚都在变大。")
 				await Dialog.say("xm", "委托人是朵朵的妈妈。她说：『把她的梦修好，让她像以前一样睡个好觉。』")
-				await Dialog.say("xm", "在梦里，%s可以打开梦境编辑器，改变时间、情绪和现实程度。不过每次修改都会消耗梦境稳定度。" % Plat.press("editor"))
+				await Dialog.say("xm", "在梦里，%s可以打开梦境编辑器，改变时间、情绪和现实程度。不过每次修改都会消耗梦境稳定度。" % Plat.press("editor"), "", "在梦里，%s可以打开梦境编辑器，改变时间、情绪和现实程度。不过每次修改都会消耗梦境稳定度。" % "")
 				GS.set_flag("briefed")
 			_set_speech("准备好了就躺进梦境舱吧，我会跟你一起进去。")
 		1:
-			_set_speech(_between_line(1))
+			_set_speech(_between_line(1), false)
 			await Dialog.say("xm", _between_line(1))
 			await Dialog.say("xm", "梦境报告：糖果城市的温度在升高……它好像开始融化了。")
 		2:
-			_set_speech(_between_line(2))
+			_set_speech(_between_line(2), false)
 			await Dialog.say("xm", _between_line(2))
 			await Dialog.say("xm", "最后一次潜入了。报告显示……整座城市，变成了一座迷宫。明天就是朵朵的十岁生日。")
 		_:
@@ -186,6 +191,12 @@ func _intro() -> void:
 
 
 func _between_line(v: int) -> String:
+	if GS.case_id == "station":
+		match GS.xm_trait():
+			"doubt": return "我在想，知道所有答案，和拥有自己的选择，并不是同一件事。"
+			"warm": return "欢迎回来。远望的乘员今天一起看了星星，他们好像不那么着急找答案了。"
+			"curious": return "星芽画出了新的航线！不知道它会长成花园，还是一座新的梦城。"
+		return "欢迎回来！我们上一次潜入的记录已经存档。"
 	if GS.case_id == "street":
 		match GS.xm_trait():
 			"doubt":
@@ -194,7 +205,7 @@ func _between_line(v: int) -> String:
 				return "沈念今天来了。她在舱外坐了很久，什么也没说。我想，她也在等一个答案。"
 			"curious":
 				return "梦境文件变大了——老灯在往街上添新东西。修复师，你不想知道它在造什么吗？"
-		return "欢迎回来！第 %d 次潜入的数据已经存档。" % v
+		return "欢迎回来！上一次潜入的数据已经存档。"
 	match GS.xm_trait():
 		"doubt":
 			return "我整理了记录……我们到底是在修复她的梦，还是在修改她？这两件事，好像越来越难分开了。"
@@ -202,7 +213,7 @@ func _between_line(v: int) -> String:
 			return "欢迎回来。朵朵昨晚翻了三次身，但没有哭。我觉得，这是好事。"
 		"curious":
 			return "梦境文件又变大了！它在长出我们没见过的结构……修复师，你不好奇吗？"
-	return "欢迎回来！第 %d 次潜入的数据已经存档。" % v
+	return "欢迎回来！上一次潜入的数据已经存档。"
 
 
 func _dive() -> void:
@@ -234,13 +245,38 @@ func _intro_street() -> void:
 				GS.set_flag("briefed_street")
 			_set_speech("准备好了就躺进梦境舱吧，我会跟你一起进去。")
 		1:
-			_set_speech(_between_line(1))
+			_set_speech(_between_line(1), false)
 			await Dialog.say("xm", _between_line(1))
 			await Dialog.say("xm", "梦境报告：梧桐巷的颜色在褪去……街上行人的脸，变得模糊了。")
 		2:
-			_set_speech(_between_line(2))
+			_set_speech(_between_line(2), false)
 			await Dialog.say("xm", _between_line(2))
 			await Dialog.say("xm", "最后一次潜入了。报告显示：整条街开始循环——走到尽头，就会回到起点。")
+		_:
+			_set_speech("这个委托已经结束了。")
+	_dive_btn.disabled = GS.visit >= GS.MAX_DIVES
+	if not _dive_btn.disabled:
+		_dive_btn.grab_focus()
+
+
+func _intro_station() -> void:
+	match GS.visit:
+		0:
+			if not GS.flag("briefed_station"):
+				await Dialog.say("sys", "［新委托 · DR-1208 · 远望太空站］")
+				await Dialog.say("xm", "第三个委托来啦，这次我们要去太空！远望站的十二位乘员，做了同一个关于明天的梦。")
+				await Dialog.say("xm", "站长林舟说，大家在梦里看到完美的明天，却越来越不敢在现实里做决定。")
+				await Dialog.say("xm", "我会陪你找线索，一步一步来。记住，梦里可以创造，醒来以后也能创造自己的明天。")
+				GS.set_flag("briefed_station")
+			_set_speech("准备好了就躺进梦境舱吧，我会跟你一起进去。")
+		1:
+			_set_speech(_between_line(1), false)
+			await Dialog.say("xm", _between_line(1))
+			await Dialog.say("xm", "梦境报告：甲板开始漂浮，植物长到了原来的路上。远望变成了一座失重花园。")
+		2:
+			_set_speech(_between_line(2), false)
+			await Dialog.say("xm", _between_line(2))
+			await Dialog.say("xm", "最后一次潜入啦。远望变成明日之海，星芽准备创造一个属于所有人的新梦。")
 		_:
 			_set_speech("这个委托已经结束了。")
 	_dive_btn.disabled = GS.visit >= GS.MAX_DIVES

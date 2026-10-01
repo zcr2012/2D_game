@@ -92,7 +92,47 @@ func voice(id: String) -> bool:
 
 
 func stop_voice() -> void:
+	_voice_token += 1
 	_voice.stop()
+
+
+var _voice_token := 0
+var _bbcode := RegEx.create_from_string("\\[[^\\]]*\\]")
+
+
+## Stable id of a fixed Xiaomian line: md5 of the spoken text without BBCode
+## and whitespace. tools/xm_voice.py computes the same ids for the clips.
+func xm_id(text: String) -> String:
+	var t := _bbcode.sub(text, "", true)
+	for w in [" ", "\n", "\t", "\r", "\u3000"]:
+		t = t.replace(w, "")
+	return "xm_" + t.md5_text().substr(0, 10)
+
+
+func has_voice(id: String) -> bool:
+	return id != "" and ResourceLoader.exists("res://assets/audio/voice/%s.mp3" % id)
+
+
+## Plays clips back to back. Returns true if at least the first one exists.
+func voice_seq(ids: Array) -> bool:
+	if ids.is_empty() or not has_voice(str(ids[0])) or not GS.settings.get("voice", true):
+		return false
+	_voice_token += 1
+	var token := _voice_token
+	_play_seq(ids, token)
+	return true
+
+
+func _play_seq(ids: Array, token: int) -> void:
+	for id in ids:
+		if token != _voice_token:
+			return
+		if not voice(str(id)):
+			continue
+		await _voice.finished
+		if token != _voice_token:
+			return
+		await get_tree().create_timer(0.18).timeout
 
 
 func voice_playing() -> bool:

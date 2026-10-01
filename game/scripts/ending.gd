@@ -15,6 +15,8 @@ var _lines_box: VBoxContainer
 func _epilogue() -> Array:
 	if GS.case_id == "street":
 		return _epilogue_street()
+	if GS.case_id == "station":
+		return _epilogue_station()
 	var e := GS.ending
 	var out: Array = []
 	match e:
@@ -84,6 +86,28 @@ func _epilogue_street() -> Array:
 	return out
 
 
+func _epilogue_station() -> Array:
+	var out: Array = []
+	match GS.ending:
+		"perfect":
+			out = ["星芽恢复成标准导航程序，远望重新沿着计划里的轨道航行。",
+				"乘员们睡得安稳了，但那些没有编号的星星和没走过的航线，也被归档在很少有人打开的角落。",
+				"林舟回信说，一切正常。她看了看那个空花盆，却想不起曾经准备在那里种什么。"]
+		"guardian":
+			out = ["星芽留下了不同的可能，不再把愿望伪装成一定会发生的预报。",
+				"十二位乘员一起决定下一段航线。林舟给妈妈讲了很多窗外的星星，没有再承诺每一天都顺利。",
+				"星芽仍然陪着他们。人类开始接受：不知道，也可以一起出发。"]
+		_:
+			var blueprint: String = str(preload("res://scripts/station_map.gd").BLUEPRINTS.get(str(GS.flags.get("sp_blueprint", "garden")), "星光花园"))
+			out = ["你和星芽把第一座梦城命名为『%s』。它成为新梦文明的起点。" % blueprint,
+				"入口上写着：这是由记忆与AI创造的梦。每个人都可以自由进入，也可以自由醒来。",
+				"远望的乘员仍在真实太空里航行。他们把梦里学到的想法，带回现实，一点一点实现。"]
+	if GS.has_frag("sp_regret"):
+		out.append("那粒没发芽的种子也有自己的小花盆。不完美的愿望，不再被当成错误。")
+	out.append("星芽的航行记录，留给了屏幕前的你。明天不是标准答案，而是一张可以一起画的地图。")
+	return out
+
+
 func _xm_line() -> String:
 	var t := GS.xm_trait()
 	if t == "doubt" and GS.ending == "perfect":
@@ -93,6 +117,14 @@ func _xm_line() -> String:
 		"warm": return "小眠：『谢谢你一直很温柔。我想，我也学会了一点点。』"
 		"curious": return "小眠：『我想看看这个世界明天会变成什么样。……我也想做一个梦。』"
 	return "小眠：『原来修复师的工作，不只是修东西呀。』"
+
+
+## The part of Xiaomian's closing remark that is spoken (inside the quotes).
+func _xm_spoken() -> String:
+	var l := _xm_line()
+	var a := l.find("『")
+	var b := l.rfind("』")
+	return l.substr(a + 1, b - a - 1) if a >= 0 and b > a else l
 
 
 func _ready() -> void:
@@ -133,8 +165,11 @@ func _ready() -> void:
 func _play(v: VBoxContainer) -> void:
 	await get_tree().create_timer(1.0).timeout
 	var lines := _epilogue()
-	lines.append(_xm_line())
+	var xm_line := _xm_line()
+	lines.append(xm_line)
 	for l in lines:
+		if l == xm_line and not GS.test_mode:
+			Audio.voice_seq([Audio.xm_id(_xm_spoken())])
 		var lab := U.label(_lines_box, l, 24)
 		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lab.custom_minimum_size = Vector2(1040, 0)

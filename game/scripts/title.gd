@@ -80,7 +80,7 @@ func _ready() -> void:
 	_menu_first = first
 	_build_settings(root)
 
-	var foot := U.label(stage, "Demo · 梦境一《糖果城市》· 梦境二《梧桐巷》   ·   " + AI.status_text(), 24, Color(1, 1, 1, 0.5))
+	var foot := U.label(stage, "Demo · 糖果城市 / 梧桐巷 / 太空站   ·   " + AI.status_text(), 24, Color(1, 1, 1, 0.5))
 	foot.anchor_top = 1.0
 	foot.anchor_bottom = 1.0
 	foot.offset_left = 20
