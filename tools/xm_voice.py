@@ -68,7 +68,7 @@ def collect():
 
     def add(text, src):
         text = text.strip()
-        if not speak(text):
+        if not speak(text) or not re.search(r"[\u4e00-\u9fffA-Za-z0-9]", speak(text).replace("%s", "")):
             return
         # composite hints are recorded in pieces (see Dialog._xm_ids)
         for marker in (" 还差：", " 另外，"):
