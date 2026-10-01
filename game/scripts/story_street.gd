@@ -242,7 +242,7 @@ func ev_lamp() -> void:
 func _lamp_first_meeting() -> void:
 	if not GS.flag("met_ld"):
 		GS.set_flag("met_ld")
-		await Dialog.say("ld", "……一百二十五，一百二十六。咦？又多了两个。")
+		await Dialog.say("ld", "……一百二十五，一百二十六。咦？又多了两个新面孔。")
 		await Dialog.say("ld", "你们是新来的？别紧张，我只是盏灯。数人，是我唯一会做的事。")
 		await Dialog.say("xm", "路灯……会说话？它的数据签名，不在任何模板里。")
 		await Dialog.say("ld", "去街那头看看那位老人家吧。他每晚都站在那儿，和我一起数。数不对的话，他不肯睡。")
@@ -266,7 +266,10 @@ func _lamp_v1() -> void:
 	GS.set_flag("v1_ld")
 	objective("（可选）继续探索、收集碎片 · 准备好后回到老灯，对梦境核心做出选择")
 	if not GS.has_frag("st_sad"):
-		await Dialog.say("xm", "老灯说这条街夜里会想起事情。试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"))
+		if GS.time != "night":
+			await Dialog.say("xm", "老灯说这条街夜里会想起事情。试试%s打开梦境编辑器，把时间调到『夜晚』？" % Plat.press("editor"))
+		else:
+			await Dialog.say("xm", "现在正是夜里。修理铺窗户亮着灯，东南边的积水也在发光，去看看吧。")
 
 
 func _lamp_v2() -> void:
@@ -305,7 +308,8 @@ func _echo_tally() -> void:
 		await Dialog.say("ld", "天太亮了，数不清。")
 		await Dialog.say("ld", "等夜里吧，灯亮着的时候，我才数得对。")
 		return
-	await Dialog.say("sys", "夜里，老灯的灯罩里浮出一本发光的账本。每一页，都是同一行字。")
+	await Dialog.say("sys", "夜里，老灯的灯罩里浮出一本账本。纸页边角叠着几组被雨水泡开的数字。")
+	await Dialog.say("sys", "一百二十六、三十二、六十二。街上的人数每次都不同，末尾空着的那一格，却一直属于同一个人。")
 	await Dialog.say("ld", "今夜，行人：沈远，一。福伯，二。修钟表的，三。买菜的，四……一直数到六十一。")
 	await Dialog.say("ld", "还差一个。六十二。这三年，一次也没有凑齐过。")
 	await Dialog.say("ld", "我数得没错，是吧？少的那个，不在街上。她在他心里，坐着，不出来。")
@@ -776,8 +780,10 @@ func current_hint() -> String:
 			if not GS.flag("v1_sy"): return "梦主沈远应该在东边的车站长椅旁。"
 			if not GS.flag("v1_ld"): return "街中间那盏会说话的路灯，好像也在数人。去和它谈谈。"
 			if not GS.has_frag("st_joy"): return "面馆门口的福伯，好像有话想对你说。"
-			if not GS.has_frag("st_radio"): return "夜里，修理铺的窗户亮着灯。%s把时间调到夜晚去看看。" % Plat.press("editor")
-			if not GS.has_frag("st_sad"): return "夜里，东南边长椅附近的积水会发光。%s把时间调到夜晚去看看。" % Plat.press("editor")
+			if not GS.has_frag("st_radio"):
+				return "修理铺的窗户亮着灯，过去听听那台收音机。" if GS.time == "night" else "夜里，修理铺的窗户会亮起。%s把时间调到夜晚去看看。" % Plat.press("editor")
+			if not GS.has_frag("st_sad"):
+				return "东南边长椅附近的积水正发着微光。" if GS.time == "night" else "夜里，东南边长椅附近的积水会发光。%s把时间调到夜晚去看看。" % Plat.press("editor")
 			if not GS.has_frag("st_photo"): return "西边梧桐树下的花盆，好像压着什么东西。"
 			for k in ["chalk", "umbrella", "cups"]:
 				if d.nodes.has("glitch_" + k) and is_instance_valid(d.nodes["glitch_" + k]):

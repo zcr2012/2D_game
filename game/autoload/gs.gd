@@ -60,7 +60,7 @@ const FRAGMENTS := {
 
 	# ---------------------------------------------------------- dream 2: Old Street
 	"st_photo": {
-		"dream": "street", "type": "memory", "name": "照片：2041年的夏天",
+		"dream": "street", "type": "memory", "name": "照片：2019年的夏天",
 		"desc": "梧桐巷口，两个人挤在一把伞下。照片左边那个人，被剪掉了半边。背面写着：『等你修好那台收音机，我们就去看海。』",
 		"effect": "解锁隐藏地点：照相馆"},
 	"st_radio": {
@@ -139,6 +139,8 @@ var reality := 0
 var dive_flags := {}
 
 var settings := {"ai_analysis": true, "voice": true, "music_volume": 0.7, "unlock_all": false}
+## Tests can redirect persistence to an isolated file without touching the player's save.
+var save_path := SAVE_PATH
 
 
 func _ready() -> void:
@@ -512,6 +514,10 @@ func begin_dive() -> void:
 	time = residue.get("time", "day")
 	emotion = residue.get("emotion", "calm")
 	reality = int(residue.get("reality", 0))
+	# Give each dream a distinct first impression: Candy City opens in its
+	# endless afternoon, while Old Street opens under its summer night lights.
+	if visit == 0:
+		time = str(case_data().get("opening_time", time))
 	# never start above what is unlocked
 	if not is_unlocked("emotion", emotion):
 		emotion = "calm"
@@ -557,23 +563,23 @@ func save_game() -> void:
 		"xm": xm, "dream_log": dream_log,
 		"residue": residue, "last_collapse": last_collapse,
 	}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data, "\t"))
 
 
 func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return FileAccess.file_exists(save_path)
 
 
 func load_game() -> bool:
 	if test_mode or not has_save():
 		return false
-	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var f := FileAccess.open(save_path, FileAccess.READ)
 	if f == null:
 		return false
 	var data = JSON.parse_string(f.get_as_text())
-	if not data is Dictionary:
+	if not data is Dictionary or not _valid_save_data(data):
 		return false
 	new_game()
 	if data.has("progress"):
@@ -613,11 +619,56 @@ func load_game() -> bool:
 	return true
 
 
+func _valid_save_data(data: Dictionary) -> bool:
+	# Do not partially apply a damaged or newer save. The original file remains
+	# untouched so a later build can still recover it.
+	var version := int(data.get("version", 1))
+	if version < 1 or version > 2:
+		return false
+	if version >= 2 and not data.get("progress") is Dictionary:
+		return false
+	for key in ["progress", "fragments", "flags", "scores", "xm", "residue"]:
+		if data.has(key) and not data[key] is Dictionary:
+			return false
+	if data.has("dream_log") and not data["dream_log"] is Array:
+		return false
+	if data.has("core_choices") and not data["core_choices"] is Array:
+		return false
+	var valid_choices := ["repair", "protect", "enhance"]
+	for choice in data.get("core_choices", []):
+		if not valid_choices.has(str(choice)):
+			return false
+	if data.has("progress"):
+		for entry in data["progress"].values():
+			if not entry is Dictionary:
+				return false
+			if entry.has("core") and not entry["core"] is Array:
+				return false
+			if entry.has("scores") and not entry["scores"] is Dictionary:
+				return false
+			if int(entry.get("visit", 0)) < 0 or int(entry.get("visit", 0)) > MAX_DIVES:
+				return false
+			for choice in entry.get("core", []):
+				if not valid_choices.has(str(choice)):
+					return false
+	if data.has("residue"):
+		var r: Dictionary = data["residue"]
+		if r.has("time") and not ["day", "night"].has(str(r["time"])):
+			return false
+		if r.has("emotion") and not ["calm", "happy", "sad", "anger"].has(str(r["emotion"])):
+			return false
+		if r.has("reality") and (int(r["reality"]) < 0 or int(r["reality"]) > 3):
+			return false
+	if not data.has("progress") and (int(data.get("visit", 0)) < 0 or int(data.get("visit", 0)) > MAX_DIVES):
+		return false
+	return true
+
+
 func delete_save() -> void:
 	if test_mode:
 		return
 	if has_save():
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
 
 # ------------------------------------------------------------------ scene helper

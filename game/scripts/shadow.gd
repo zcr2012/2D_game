@@ -26,6 +26,8 @@ func _ready() -> void:
 	add_child(sprite)
 	home = global_position
 	_wander_target = home
+	if astar == null:
+		_pick_wander()
 	_t = randf() * 10.0
 
 

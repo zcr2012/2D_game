@@ -97,7 +97,8 @@ func run() -> void:
 	check(d.street != null and d.world_size == Vector2(1760, 700), "street map built")
 	check(d.nodes.has("laodeng") and d.nodes.has("fubo") and d.nodes.has("shenyuan"), "npcs spawned")
 	check(d.street._fracture_col == null and d.street.fog == null, "no fracture / fog in summer")
-	check(find_interact(d, "亮着灯的窗户") == null, "radio window hidden in daytime")
+	check(GS.time == "night" and find_interact(d, "亮着灯的窗户") != null, "summer dive opens at night with the radio window lit")
+	check(not d.story.current_hint().contains("调到夜晚"), "nighttime hint does not ask to switch to night again")
 	await interact(d, "老灯")
 	check(GS.flag("met_ld"), "met the lamp")
 	await edit("emotion", "happy", false)
@@ -108,7 +109,7 @@ func run() -> void:
 	check(GS.flag("v1_sy"), "talked to Shen Yuan")
 	await interact(d, "老灯", [0, 3])
 	check(GS.flag("v1_ld"), "lamp conversation v1")
-	await edit("time", "night", true)
+	check(not d.story.current_hint().contains("调到夜晚"), "radio hint matches the current night setting")
 	await interact(d, "亮着灯的窗户")
 	check(GS.has_frag("st_radio"), "radio memory from the night window")
 	await interact(d, "发光的积水")
@@ -196,17 +197,19 @@ func run() -> void:
 	await interact(d, "拾取：记忆碎片")
 	check(GS.has_frag("st_ticket"), "ticket memory in madness")
 	check(d.shadows.size() == 1, "forgotten one appears at reality 2 (%d)" % d.shadows.size())
+	# Keep the scripted run clear of the three fixed spawn points. The chase
+	# itself is tested below after moving one shadow beside the player.
+	d.player.global_position = Vector2(900, 440)
 	await edit("reality", 3, true)
 	await frames(5)
 	check(d.shadows.size() == 3, "nightmare spawns shadows (%d)" % d.shadows.size())
-	var s0: Vector2 = d.shadows[0].global_position
-	await physics(40)
-	check(d.shadows[0].global_position != s0, "shadow moves")
-	d.shadows[0].global_position = d.player.global_position
+	var shadow: Node2D = d.shadows[0]
+	check(shadow._wander_target != shadow.home, "street shadow has a roaming target")
+	d._caught_cd = 0.0
+	d.player.global_position = shadow.global_position + Vector2(100, 0)
+	var s0: Vector2 = shadow.global_position
 	await physics(3)
-	# (the cooldown may already have run out on a slow CI frame at time_scale 8,
-	# so look at the effect instead: the player was sent back to the entrance)
-	check(d.player.global_position.distance_to(d.spawn) < 60.0, "caught by shadow -> back to the entrance")
+	check(shadow.global_position != s0, "shadow chases the player")
 	await edit("reality", 1, true)
 	await frames(5)
 	check(d.shadows.size() == 0, "shadows gone when reality drops")

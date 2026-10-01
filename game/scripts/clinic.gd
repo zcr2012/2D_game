@@ -189,7 +189,7 @@ func _between_line(v: int) -> String:
 	if GS.case_id == "street":
 		match GS.xm_trait():
 			"doubt":
-				return "……我又想起了朵朵。这次，我们能不能在改动它之前，先问问它想要什么？"
+				return "……糖果城市之后，我一直在想『修好』到底是什么意思。这次，我们先听听梧桐巷想说什么。"
 			"warm":
 				return "沈念今天来了。她在舱外坐了很久，什么也没说。我想，她也在等一个答案。"
 			"curious":

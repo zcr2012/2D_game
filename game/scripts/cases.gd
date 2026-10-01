@@ -11,6 +11,7 @@ const DATA := {
 	"candy": {
 		"name": "糖果城市", "tag": "童年", "available": true,
 		"file_id": "DR-0417",
+		"opening_time": "day",
 		"stages": ["sweet", "melting", "maze"],
 		"dreamer": "林朵朵，9岁",
 		"symptom": "连续 27 晚重复同一个梦；梦境文件每晚增长；检测到未授权的AI生成内容。",
@@ -39,6 +40,7 @@ const DATA := {
 	"street": {
 		"name": "梧桐巷", "tag": "遗憾", "available": true,
 		"file_id": "DR-0731",
+		"opening_time": "night",
 		"stages": ["summer", "fading", "echo"],
 		"dreamer": "沈远，82岁（退休修理工）",
 		"symptom": "每晚在同一条街上数行人，总是少一个，数不对就不肯醒；街景逐夜褪色；检测到AI人格『老灯』。",

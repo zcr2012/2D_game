@@ -61,12 +61,16 @@ func _ready() -> void:
 	menu.add_theme_constant_override("separation", 12)
 	stage.add_child(menu)
 	var first := U.button(menu, "开始新的委托", _new_game)
-	if GS.has_save() and GS.load_game():
+	var has_save := not GS.test_mode and GS.has_save()
+	var save_loaded := has_save and GS.load_game()
+	if save_loaded:
 		var label := "继续：《%s》第 %d 次潜入" % [GS.case_name(), GS.dive()]
 		if GS.visit >= GS.MAX_DIVES:
 			label = "继续：《%s》已完成（查看结局）" % GS.case_name()
 		first = U.button(menu, label, _continue)
 		menu.move_child(first, 0)
+	elif has_save:
+		U.label(menu, "检测到存档，但无法读取；原存档已保留。", 18, Color(1.0, 0.55, 0.55))
 	if bool(GS.settings.get("unlock_all", false)):
 		U.button(menu, "梦境选择（测试：已解锁全部）", _open_cases)
 	U.button(menu, "设置", _open_settings)
@@ -131,6 +135,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _new_game() -> void:
 	GS.new_game()
 	GS.delete_save()
+	GS.save_game()
 	GS.goto("clinic")
 
 
@@ -167,4 +172,5 @@ func _start_case(id: String) -> void:
 	GS.new_game()
 	GS.delete_save()
 	GS.start_case(id)
+	GS.save_game()
 	GS.goto("clinic")
