@@ -45,6 +45,22 @@ ASSETS = {
     "clocktower":   (250, 64, False, 0),
     "lollipop":     (92, 48, False, 0),
     "carousel":     (130, 64, False, 0),
+    # ---- dream 2: Old Street (老街)
+    "shenyuan":     (52, 48, True, 0.55),
+    "laodeng":      (74, 48, True, 0.45),
+    "fubo":         (50, 48, True, 0.55),
+    "suwan":        (52, 48, True, 0.55),
+    "faceless":     (54, 32, False, 0),
+    "st_noodle":    (150, 64, False, 0),
+    "st_repair":    (132, 64, False, 0),
+    "st_studio":    (176, 64, False, 0),
+    "st_flat":      (190, 64, False, 0),
+    "st_tree":      (138, 48, False, 0),
+    "st_bench":     (62, 48, False, 0),
+    "st_lamp":      (84, 40, False, 0),
+    "st_shutter":   (66, 40, False, 0),
+    "st_signpost":  (66, 40, False, 0),
+    "st_planter":   (30, 40, False, 0),
 }
 
 # Tiles: stretched to an exact size and made fully opaque, so neighbouring

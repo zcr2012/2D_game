@@ -21,8 +21,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Import
         run: cd $PROJECT_PATH && godot --headless --import || true
-      - name: Smoke test (full playthrough)
+      - name: Smoke test - Dream 1 Candy City (full playthrough)
         run: cd $PROJECT_PATH && godot --headless res://tests/smoke.tscn
+      - name: Smoke test - Dream 2 Old Street (full playthrough)
+        run: cd $PROJECT_PATH && godot --headless res://tests/smoke_street.tscn
+      - name: AI protocols + dream system test
+        run: cd $PROJECT_PATH && godot --headless res://tests/ai_test.tscn
       - name: Platform test (touch / layouts / gamepad)
         run: cd $PROJECT_PATH && godot --headless res://tests/platform_test.tscn
 

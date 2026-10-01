@@ -69,7 +69,8 @@ func _ready() -> void:
 	cols.add_child(mid)
 	var mv := VBoxContainer.new()
 	mid.add_child(mv)
-	U.label(mv, "委托档案 DR-0417", 24, Color(1.0, 0.9, 0.55))
+	var cd: Dictionary = GS.case_data()
+	U.label(mv, "委托档案 " + str(cd["file_id"]), 24, Color(1.0, 0.9, 0.55))
 	var size_mb := 128.0 * pow(1.14, GS.visit)
 	var choices_txt := ""
 	var names := {"repair": "修复", "protect": "守护", "enhance": "增强"}
@@ -77,10 +78,10 @@ func _ready() -> void:
 		choices_txt += "  第%d次：%s\n" % [i + 1, names.get(GS.core_choices[i], "?")]
 	if choices_txt == "":
 		choices_txt = "  （尚未潜入）\n"
-	U.rich(mv, ("[color=#bbbbdd]梦主[/color]  林朵朵，9岁\n" +
-		"[color=#bbbbdd]梦境[/color]  糖果城市（童年）\n" +
-		"[color=#bbbbdd]症状[/color]  连续 27 晚重复同一个梦；梦境文件每晚增长；检测到未授权的AI生成内容。\n" +
-		"[color=#bbbbdd]委托人[/color]  朵朵的母亲：『把她的梦修好，让她像以前一样睡个好觉。』\n\n" +
+	U.rich(mv, ("[color=#bbbbdd]梦主[/color]  " + str(cd["dreamer"]) + "\n" +
+		"[color=#bbbbdd]梦境[/color]  " + str(cd["name"]) + "（" + str(cd["tag"]) + "）\n" +
+		"[color=#bbbbdd]症状[/color]  " + str(cd["symptom"]) + "\n" +
+		"[color=#bbbbdd]委托人[/color]  " + str(cd["client"]) + "\n\n" +
 		"[color=#7ff5ff]梦境文件[/color]  %.1f MB   [color=#7ff5ff]潜入[/color]  %d / %d\n" +
 		"[color=#7ff5ff]梦境核心处理记录[/color]\n%s" +
 		"[color=#7ff5ff]累计[/color]  修复 %d · 守护 %d · 增强 %d") % [
@@ -94,11 +95,15 @@ func _ready() -> void:
 	var rv := VBoxContainer.new()
 	right.add_child(rv)
 	U.label(rv, "梦境日志", 24, Color(1.0, 0.8, 0.9))
-	U.label(rv, "碎片 %d / %d" % [GS.fragments.size(), GS.FRAGMENTS.size()], 24, Color(1, 1, 1, 0.7))
+	U.label(rv, "碎片 %d / %d" % [GS.frag_count(), GS.frag_ids().size()], 24, Color(1, 1, 1, 0.7))
 	var log_txt := ""
-	var start: int = max(0, GS.dream_log.size() - 12)
-	for i in range(start, GS.dream_log.size()):
-		var e: Dictionary = GS.dream_log[i]
+	var mine: Array = []
+	for e in GS.dream_log:
+		if str(e.get("case", "candy")) == GS.case_id:
+			mine.append(e)
+	var start: int = max(0, mine.size() - 12)
+	for i in range(start, mine.size()):
+		var e: Dictionary = mine[i]
 		log_txt += "[color=#8888aa]#%d[/color] %s\n" % [int(e.get("dive", 0)), e.get("text", "")]
 	if log_txt == "":
 		log_txt = "[color=#8888aa]还没有记录。[/color]"
@@ -150,6 +155,9 @@ func _intro() -> void:
 	if GS.last_collapse:
 		GS.last_collapse = false
 		await Dialog.say("xm", "呼……梦境崩塌了，我们被弹了出来。别担心，这次不算次数。稳定度快耗光的时候，就少改一点梦吧。")
+	if GS.case_id == "street":
+		await _intro_street()
+		return
 	match GS.visit:
 		0:
 			if not GS.flag("briefed"):
@@ -178,6 +186,15 @@ func _intro() -> void:
 
 
 func _between_line(v: int) -> String:
+	if GS.case_id == "street":
+		match GS.xm_trait():
+			"doubt":
+				return "……我又想起了朵朵。这次，我们能不能在改动它之前，先问问它想要什么？"
+			"warm":
+				return "沈念今天来了。她在舱外坐了很久，什么也没说。我想，她也在等一个答案。"
+			"curious":
+				return "梦境文件变大了——老灯在往街上添新东西。修复师，你不想知道它在造什么吗？"
+		return "欢迎回来！第 %d 次潜入的数据已经存档。" % v
 	match GS.xm_trait():
 		"doubt":
 			return "我整理了记录……我们到底是在修复她的梦，还是在修改她？这两件事，好像越来越难分开了。"
@@ -199,3 +216,33 @@ func _dive() -> void:
 	t.tween_property(fade, "color:a", 1.0, 1.0)
 	await t.finished
 	GS.goto("dream")
+
+
+func _intro_street() -> void:
+	match GS.visit:
+		0:
+			if not GS.flag("briefed_street"):
+				await Dialog.say("sys", "［新委托已送达 · DR-0731 · 第七区］")
+				await Dialog.say("xm", "第二个委托！梦主是沈远爷爷，82岁，退休的修理工。")
+				await Dialog.say("xm", "委托人是他的女儿沈念。她说：『爸爸每晚都在梦里数街上的行人，总是少一个，数不对就不肯醒。』")
+				await Dialog.say("xm", "可是……沈念也说，他们家一直只有他们两个人。")
+				match GS.xm_trait():
+					"doubt": await Dialog.say("xm", "糖果城市之后，我一直在想『修好』到底是什么意思。这次，我想先听听这个梦怎么说。")
+					"warm": await Dialog.say("xm", "朵朵后来怎么样了呢……这次，我也想温柔一点。")
+					"curious": await Dialog.say("xm", "我有点期待！不知道梧桐巷会长成什么样子。")
+					_: await Dialog.say("xm", "这次的梦叫『梧桐巷』，是他年轻时住过的老街。别忘了，梦里的每个细节都可能是线索。")
+				GS.set_flag("briefed_street")
+			_set_speech("准备好了就躺进梦境舱吧，我会跟你一起进去。")
+		1:
+			_set_speech(_between_line(1))
+			await Dialog.say("xm", _between_line(1))
+			await Dialog.say("xm", "梦境报告：梧桐巷的颜色在褪去……街上行人的脸，变得模糊了。")
+		2:
+			_set_speech(_between_line(2))
+			await Dialog.say("xm", _between_line(2))
+			await Dialog.say("xm", "最后一次潜入了。报告显示：整条街开始循环——走到尽头，就会回到起点。")
+		_:
+			_set_speech("这个委托已经结束了。")
+	_dive_btn.disabled = GS.visit >= GS.MAX_DIVES
+	if not _dive_btn.disabled:
+		_dive_btn.grab_focus()

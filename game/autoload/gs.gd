@@ -9,6 +9,8 @@ signal fragment_added(id: String)
 signal toast(text: String)
 signal collapsed                 # stability reached 0
 
+const Cases := preload("res://scripts/cases.gd")
+
 const SAVE_PATH := "user://dream_repair_save.json"
 const FONT_PATH := "res://assets/fonts/fusion-pixel-12px-proportional-sc.ttf"
 const MAX_DIVES := 3
@@ -16,57 +18,118 @@ const MAX_DIVES := 3
 # ------------------------------------------------------------------ data
 const FRAGMENTS := {
 	"mem_photo": {
+		"dream": "candy",
 		"type": "memory", "name": "照片：2077年的夏天",
 		"desc": "奶奶的糖果店门口，朵朵举着一根比脸还大的棒棒糖。背面写着：『等朵朵十岁，奶奶教你熬糖。』",
 		"effect": "解锁隐藏地点：奶奶的糖果店"},
 	"mem_diary": {
+		"dream": "candy",
 		"type": "memory", "name": "日记：不想不难过",
 		"desc": "『妈妈说，长大了就不会那么难过了。可是我不想不难过。不难过，就是忘记了。』",
 		"effect": "糖心会说出更多真话"},
 	"mem_voice": {
+		"dream": "candy",
 		"type": "memory", "name": "录音：熬糖的声音",
 		"desc": "咕嘟，咕嘟。一个苍老的声音在笑：『糖要慢慢熬，人要慢慢长。』",
 		"effect": "解锁特殊结局台词"},
 	"emo_joy": {
+		"dream": "candy", "emo": "joy",
 		"type": "emotion", "name": "情绪碎片：快乐",
 		"desc": "生日蛋糕上第一根蜡烛的光。",
 		"effect": "梦境编辑器：解锁『快乐』（色彩增强，糖浆结晶）"},
 	"emo_sad": {
+		"dream": "candy", "emo": "sad",
 		"type": "emotion", "name": "情绪碎片：悲伤",
 		"desc": "作文本《我的奶奶》，最后一句被橡皮擦得发白。",
 		"effect": "梦境编辑器：解锁『悲伤』（下雨，显现足迹）"},
 	"emo_anger": {
+		"dream": "candy", "emo": "anger",
 		"type": "emotion", "name": "情绪碎片：愤怒",
 		"desc": "熊先生身上被缝了又拆、拆了又缝的那条线。",
 		"effect": "梦境编辑器：解锁『愤怒』（建筑破裂，可击碎巧克力墙）"},
 	"emo_fear": {
+		"dream": "candy", "emo": "fear",
 		"type": "emotion", "name": "情绪碎片：恐惧",
 		"desc": "一只大人的手表，指针永远停在十点整。",
 		"effect": "梦境编辑器：解锁『疯狂梦境』与『噩梦』，开启隐藏区域"},
 	"emo_regret": {
+		"dream": "candy", "emo": "regret",
 		"type": "emotion", "name": "情绪碎片：遗憾",
 		"desc": "糖果店柜台上，最后一颗没有吃掉的糖。",
 		"effect": "解锁特殊剧情"},
+
+	# ---------------------------------------------------------- dream 2: Old Street
+	"st_photo": {
+		"dream": "street", "type": "memory", "name": "照片：2041年的夏天",
+		"desc": "梧桐巷口，两个人挤在一把伞下。照片左边那个人，被剪掉了半边。背面写着：『等你修好那台收音机，我们就去看海。』",
+		"effect": "解锁隐藏地点：照相馆"},
+	"st_radio": {
+		"dream": "street", "type": "memory", "name": "录音：收音机里的声音",
+		"desc": "沙沙……一个温和的女声：『老沈，下雨了，记得带伞——』后面是长长的电流声。",
+		"effect": "解锁特殊结局台词"},
+	"st_ticket": {
+		"dream": "street", "type": "memory", "name": "车票：末班车，只有一张",
+		"desc": "一张去海边的车票，日期是她离开的那天。座位号：只有一个。",
+		"effect": "老灯会说出更多真话"},
+	"st_joy": {
+		"dream": "street", "emo": "joy", "type": "emotion", "name": "情绪碎片：快乐",
+		"desc": "面馆里，第二碗阳春面升起的热气。",
+		"effect": "梦境编辑器：解锁『快乐』（色彩回到街上，褪色的人脸重新浮现）"},
+	"st_sad": {
+		"dream": "street", "emo": "sad", "type": "emotion", "name": "情绪碎片：悲伤",
+		"desc": "雨天积水里的倒影：一把为两个人撑开的伞，其中一个人的位置是空的。",
+		"effect": "梦境编辑器：解锁『悲伤』（下雨，积水映出缺失的东西）"},
+	"st_anger": {
+		"dream": "street", "emo": "anger", "type": "emotion", "name": "情绪碎片：愤怒",
+		"desc": "修理铺工作台上的一张维修单，备注栏只有两个字：『随你。』",
+		"effect": "梦境编辑器：解锁『愤怒』（卷帘门震裂，可以被撞开）"},
+	"st_fear": {
+		"dream": "street", "emo": "fear", "type": "emotion", "name": "情绪碎片：恐惧",
+		"desc": "一块镜子的碎片。镜子里的老街上，所有人都没有脸，包括你。",
+		"effect": "梦境编辑器：解锁『疯狂梦境』与『噩梦』，开启隐藏区域"},
+	"st_regret": {
+		"dream": "street", "emo": "regret", "type": "emotion", "name": "情绪碎片：遗憾",
+		"desc": "照相馆橱窗里最后一张照片的背面，有一行没写完的字：『路上小——』",
+		"effect": "解锁特殊剧情"},
 }
-const FRAGMENT_ORDER := ["mem_photo", "mem_diary", "mem_voice", "emo_joy", "emo_sad", "emo_anger", "emo_fear", "emo_regret"]
+const FRAGMENT_ORDER := ["mem_photo", "mem_diary", "mem_voice", "emo_joy", "emo_sad", "emo_anger", "emo_fear", "emo_regret",
+	"st_photo", "st_radio", "st_ticket", "st_joy", "st_sad", "st_anger", "st_fear", "st_regret"]
 
 const TIME_NAMES := {"day": "白天", "night": "夜晚"}
 const EMOTION_NAMES := {"calm": "平静", "happy": "快乐", "sad": "悲伤", "anger": "愤怒"}
 const REALITY_NAMES := ["梦境稳定", "幻想增强", "疯狂梦境", "噩梦"]
 const TRAIT_NAMES := {"naive": "懵懂", "warm": "温柔", "doubt": "怀疑", "curious": "好奇"}
-const STAGE_NAMES := {"sweet": "甜蜜童话", "melting": "融化之城", "maze": "巨大迷宫"}
+const STAGE_NAMES := {"sweet": "甜蜜童话", "melting": "融化之城", "maze": "巨大迷宫",
+	"summer": "夏夜老街", "fading": "褪色之街", "echo": "回声之街"}
 
 # ------------------------------------------------------------------ state
-var visit := 0                         # completed dives (0..3)
-var fragments := {}                    # id -> true
+var case_id := "candy"                 # the dream (commission) being played
+## Per-dream progress: id -> {"visit": 0..3, "core": [..], "ending": "", "scores": {..}}
+var progress := {}
+var fragments := {}                    # id -> true (all dreams)
 var flags := {}                        # story flags (persist between dives)
-var scores := {"repair": 0, "protect": 0, "enhance": 0}
-var xm := {"warmth": 0, "doubt": 0, "curiosity": 0}   # Xiaomian personality
-var core_choices: Array = []           # "repair" / "protect" / "enhance" per dive
-var dream_log: Array = []              # [{"dive": n, "text": "..."}]
+var scores := {"repair": 0, "protect": 0, "enhance": 0}   # all dreams
+var xm := {"warmth": 0, "doubt": 0, "curiosity": 0}   # Xiaomian personality (carries over)
+var dream_log: Array = []              # [{"dive": n, "case": id, "text": "..."}]
 var residue := {"time": "day", "emotion": "calm", "reality": 0}
-var ending := ""
 var last_collapse := false
+
+## These three belong to the CURRENT dream; they are views into `progress`.
+var visit: int:                        # completed dives (0..3)
+	get:
+		return int(_prog()["visit"])
+	set(v):
+		_prog()["visit"] = v
+var core_choices: Array:               # "repair" / "protect" / "enhance" per dive
+	get:
+		return _prog()["core"]
+	set(v):
+		_prog()["core"] = v
+var ending: String:
+	get:
+		return str(_prog()["ending"])
+	set(v):
+		_prog()["ending"] = v
 
 # per-dive (not saved)
 var stability := 100.0
@@ -75,7 +138,7 @@ var emotion := "calm"
 var reality := 0
 var dive_flags := {}
 
-var settings := {"ai_analysis": true, "voice": true, "music_volume": 0.7}
+var settings := {"ai_analysis": true, "voice": true, "music_volume": 0.7, "unlock_all": false}
 
 
 func _ready() -> void:
@@ -204,15 +267,106 @@ func _setup_theme() -> void:
 
 
 # ------------------------------------------------------------------ helpers
+func _new_prog() -> Dictionary:
+	return {"visit": 0, "core": [], "ending": "", "scores": {"repair": 0, "protect": 0, "enhance": 0}}
+
+
+func _prog() -> Dictionary:
+	if not progress.has(case_id):
+		progress[case_id] = _new_prog()
+	return progress[case_id]
+
+
+func case_data(id := "") -> Dictionary:
+	return Cases.DATA[id if id != "" else case_id]
+
+
+func case_name() -> String:
+	return str(case_data()["name"])
+
+
+## Score of the current dream only (the ending thresholds use this).
+func case_score(kind: String) -> int:
+	return int(_prog()["scores"].get(kind, 0))
+
+
 func dive() -> int:
 	return visit + 1
 
 
 func stage() -> String:
-	match dive():
-		1: return "sweet"
-		2: return "melting"
-		_: return "maze"
+	var st: Array = case_data()["stages"]
+	return str(st[clampi(dive() - 1, 0, st.size() - 1)])
+
+
+func stage_name() -> String:
+	return str(STAGE_NAMES.get(stage(), ""))
+
+
+func case_done(id: String) -> bool:
+	return progress.has(id) and int(progress[id]["visit"]) >= MAX_DIVES
+
+
+## Dreams the player may start now: the first one, the one after a finished
+## one, or everything when the test option is on.
+func case_unlocked(id: String) -> bool:
+	if not Cases.DATA[id]["available"]:
+		return false
+	if bool(settings.get("unlock_all", false)):
+		return true
+	var i: int = Cases.ORDER.find(id)
+	return i <= 0 or case_done(str(Cases.ORDER[i - 1]))
+
+
+## Next available dream after the current one that is not finished ("" = none).
+func next_case_id() -> String:
+	var i: int = Cases.ORDER.find(case_id)
+	for j in range(i + 1, Cases.ORDER.size()):
+		var id: String = Cases.ORDER[j]
+		if Cases.DATA[id]["available"] and not case_done(id):
+			return id
+	return ""
+
+
+func has_later_unavailable_case() -> bool:
+	var i: int = Cases.ORDER.find(case_id)
+	for j in range(i + 1, Cases.ORDER.size()):
+		if not Cases.DATA[Cases.ORDER[j]]["available"]:
+			return true
+	return false
+
+
+func start_case(id: String) -> void:
+	case_id = id
+	residue = {"time": "day", "emotion": "calm", "reality": 0}
+	last_collapse = false
+	_prog()
+
+
+## Fragment ids that belong to a dream, in display order.
+func frag_ids(id := "") -> Array:
+	var cid := id if id != "" else case_id
+	var out: Array = []
+	for f in FRAGMENT_ORDER:
+		if FRAGMENTS[f].get("dream", "candy") == cid:
+			out.append(f)
+	return out
+
+
+func frag_count(id := "") -> int:
+	var n := 0
+	for f in frag_ids(id):
+		if fragments.has(f):
+			n += 1
+	return n
+
+
+## True once any collected fragment carries this emotion tag ("joy" ...).
+func has_emo(tag: String) -> bool:
+	for f in fragments.keys():
+		if FRAGMENTS.has(f) and FRAGMENTS[f].get("emo", "") == tag:
+			return true
+	return false
 
 
 func has_frag(id: String) -> bool:
@@ -242,7 +396,7 @@ func set_flag(k: String, persistent := true) -> void:
 
 
 func add_log(text: String) -> void:
-	dream_log.append({"dive": dive(), "text": text})
+	dream_log.append({"dive": dive(), "case": case_id, "text": text})
 
 
 ## Record a player action. kind: "repair" | "protect" | "enhance".
@@ -250,6 +404,8 @@ func add_log(text: String) -> void:
 ## enhancing makes it curious.
 func act(kind: String, text := "") -> void:
 	scores[kind] = scores.get(kind, 0) + 1
+	var cs: Dictionary = _prog()["scores"]
+	cs[kind] = int(cs.get(kind, 0)) + 1
 	match kind:
 		"repair": xm["doubt"] += 1
 		"protect": xm["warmth"] += 1
@@ -292,11 +448,11 @@ func is_unlocked(kind: String, value) -> bool:
 		"emotion":
 			match value:
 				"calm": return true
-				"happy": return has_frag("emo_joy")
-				"sad": return has_frag("emo_sad")
-				"anger": return has_frag("emo_anger")
+				"happy": return has_emo("joy")
+				"sad": return has_emo("sad")
+				"anger": return has_emo("anger")
 		"reality":
-			return int(value) <= 1 or has_frag("emo_fear")
+			return int(value) <= 1 or has_emo("fear")
 	return false
 
 
@@ -380,15 +536,14 @@ func collapse_dive() -> void:
 
 
 func new_game() -> void:
-	visit = 0
+	case_id = "candy"
+	progress = {}
 	fragments = {}
 	flags = {}
 	scores = {"repair": 0, "protect": 0, "enhance": 0}
 	xm = {"warmth": 0, "doubt": 0, "curiosity": 0}
-	core_choices = []
 	dream_log = []
 	residue = {"time": "day", "emotion": "calm", "reality": 0}
-	ending = ""
 	last_collapse = false
 
 
@@ -397,9 +552,10 @@ func save_game() -> void:
 	if test_mode:
 		return
 	var data := {
-		"visit": visit, "fragments": fragments, "flags": flags, "scores": scores,
-		"xm": xm, "core_choices": core_choices, "dream_log": dream_log,
-		"residue": residue, "ending": ending, "last_collapse": last_collapse,
+		"version": 2, "case_id": case_id, "progress": progress,
+		"fragments": fragments, "flags": flags, "scores": scores,
+		"xm": xm, "dream_log": dream_log,
+		"residue": residue, "last_collapse": last_collapse,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -420,18 +576,39 @@ func load_game() -> bool:
 	if not data is Dictionary:
 		return false
 	new_game()
-	visit = int(data.get("visit", 0))
+	if data.has("progress"):
+		var pr: Dictionary = data["progress"]
+		for cid in pr.keys():
+			if not Cases.DATA.has(cid):
+				continue
+			var e: Dictionary = pr[cid]
+			var np := _new_prog()
+			np["visit"] = int(e.get("visit", 0))
+			np["core"] = e.get("core", [])
+			np["ending"] = str(e.get("ending", ""))
+			for k in ["repair", "protect", "enhance"]:
+				np["scores"][k] = int(e.get("scores", {}).get(k, 0))
+			progress[cid] = np
+		var cur := str(data.get("case_id", "candy"))
+		case_id = cur if Cases.DATA.has(cur) else "candy"
+	else:
+		# version 1 save (Candy City only)
+		var np1 := _new_prog()
+		np1["visit"] = int(data.get("visit", 0))
+		np1["core"] = data.get("core_choices", [])
+		np1["ending"] = str(data.get("ending", ""))
+		for k in ["repair", "protect", "enhance"]:
+			np1["scores"][k] = int(data.get("scores", {}).get(k, 0))
+		progress["candy"] = np1
 	fragments = data.get("fragments", {})
 	flags = data.get("flags", {})
 	for k in scores.keys():
 		scores[k] = int(data.get("scores", {}).get(k, 0))
 	for k in xm.keys():
 		xm[k] = int(data.get("xm", {}).get(k, 0))
-	core_choices = data.get("core_choices", [])
 	dream_log = data.get("dream_log", [])
 	var r: Dictionary = data.get("residue", {})
 	residue = {"time": r.get("time", "day"), "emotion": r.get("emotion", "calm"), "reality": int(r.get("reality", 0))}
-	ending = data.get("ending", "")
 	last_collapse = data.get("last_collapse", false)
 	return true
 
