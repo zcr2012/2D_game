@@ -105,13 +105,33 @@
 
 ### 方法一：让 GitHub 自动打包（推荐）
 
-仓库里已经有 `.github/workflows/export.yml`：每次 push，GitHub Actions 会先跑两套自动测试，然后打出三个包。在仓库的 **Actions** 页面点进这次运行，页面底部 **Artifacts** 里下载：
+仓库里已经有 `.github/workflows/export.yml`：每次 push，GitHub Actions 会先跑自动测试，然后打出 Windows / Linux / Android 三个包。在仓库的 **Actions** 页面点进这次运行，页面底部 **Artifacts** 里下载：
 
-- `DreamRepair-windows` → `DreamRepair.exe`（单文件，双击运行）
+- `DreamRepair-windows` → `DreamRepair.exe`（`binary_format/embed_pck=true`，单文件双击运行）
 - `DreamRepair-linux` → `DreamRepair.x86_64`（`chmod +x` 后运行）
-- `DreamRepair-android` → `DreamRepair-debug.apk`（传到手机上安装，需要允许“安装未知来源应用”）
+- `DreamRepair-android` → `DreamRepair.apk`（传到手机上安装，需要允许“安装未知来源应用”）
 
-APK 是 debug 签名，自己玩、给朋友测都够用；上架应用商店需要自己的 release 签名密钥。
+三个包都用 **release 模板 + release 模式**导出（`--export-release`），不是 debug 版本。
+APK 使用 Android 公开的调试签名密钥签名，好处是不需要在 CI 里配置任何密钥就能装能玩、连续构建可以覆盖安装；上架应用商店需要换成自己的 release 签名密钥（在 `export_presets.cfg` 的 `keystore/release_*` 里配置，或用 CI secret 注入）。
+
+### 发一个 Release（三个平台打包上传）
+
+想让三个平台的成品直接出现在 **Releases** 页面（而不是埋在 Actions 的 Artifacts 里），打一个 `v` 开头的标签再推送即可：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+流水线会自动完成：测试 → 三平台导出 → 打包 → 发布，产物为
+
+| 文件 | 内容 |
+|---|---|
+| `DreamRepair-<版本>-windows-x86_64.zip` | `DreamRepair.exe` + `使用说明.txt` |
+| `DreamRepair-<版本>-linux-x86_64.zip` | `DreamRepair.x86_64` + `使用说明.txt` |
+| `DreamRepair-<版本>-android.apk` | 手机 / 平板直接下载安装 |
+
+发布说明取自 `.github/release/RELEASE_NOTES.md`（`{{VERSION}}` 会替换成标签名），压缩包里的运行说明取自 `.github/release/HOW_TO_RUN.txt`。对同一个标签重跑工作流会**覆盖**已有 Release 的产物，不会报错。
 
 ### 方法二：在自己电脑上用 Godot 编辑器打包
 
@@ -177,7 +197,8 @@ game/                      Godot 项目（打开 game/project.godot）
   tests/ai_test.gd         各 AI 协议的请求 / 响应解析、自定义接口、设置面板、梦境解锁规则（不联网）
   tests/platform_test.gd   平台测试：5 种屏幕比例的布局、触屏 / 手柄 / 键盘、返回键、输入框
   export_presets.cfg       导出预设：Windows / Linux / Android
-.github/workflows/         GitHub Actions：测试 + 自动打包三个平台
+.github/workflows/         GitHub Actions：测试 + 自动打包三个平台（打 v* 标签则发布 Release）
+.github/release/           发布用文案：RELEASE_NOTES.md（发布说明）、HOW_TO_RUN.txt（压缩包内使用说明）
   assets/                  处理后的游戏素材
 art_src/raw/               AI 生成的原图（#00FF00 绿幕）
 art_src/PROMPTS.md         生图提示词和通用规则
