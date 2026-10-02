@@ -173,7 +173,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unzip -l release/*.zip
+          # unzip 只接受一个压缩包，多余的参数会被当成“包内成员名”而报错退出。
+          for z in release/*.zip; do echo "== $z =="; unzip -l "$z"; done
           python3 - <<'PY'
           import glob, zipfile, sys
 
