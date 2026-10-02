@@ -1,0 +1,34 @@
+梦境修复师 Dream Repair —— 运行说明
+=====================================
+
+【Windows】
+1. 先解压整个文件夹，再双击 DreamRepair.exe 开始游戏（不要只把 exe 单独拖出来）。
+2. 如果 Windows 弹出“Windows 已保护你的电脑”，点“更多信息” → “仍要运行”。
+   这是因为我们还没有购买代码签名证书，不是病毒。
+3. 需要支持 OpenGL 3.3 的显卡驱动；游戏使用 Godot 的 GL Compatibility 渲染器，
+   老显卡和核显都能跑。
+
+【Linux】
+1. 解压后打开终端，进入该文件夹：
+     chmod +x DreamRepair.x86_64
+     ./DreamRepair.x86_64
+2. 需要 OpenGL 3.3 驱动（mesa / 厂商驱动均可）。
+   如果提示缺少共享库，请安装发行版对应的 libgl / libasound / libx11 等基础包。
+
+【操作】
+· 键盘：WASD 或方向键移动，E / 空格 互动与推进对话，Tab 梦境编辑器，
+        Q 问小眠，I 碎片图鉴，Esc 暂停菜单，F11 全屏
+· 手柄：左摇杆移动，A 互动，Y 编辑器，X 问小眠，Start 菜单
+· 触屏（Android）：屏幕左侧任意位置按住拖动移动，右下角『互动』按钮，
+        返回键 = 暂停菜单
+
+【存档与设置位置】
+· Windows：%APPDATA%\Godot\app_userdata\梦境修复师 Dream Repair
+· Linux：~/.local/share/godot/app_userdata/梦境修复师 Dream Repair
+（删掉该文件夹即可重置全部进度与设置。）
+
+【AI 叙事接口（可选）】
+在『设置』里可以填写 Claude / OpenAI / Gemini / DeepSeek / Kimi / 通义千问 /
+智谱 / OpenRouter / Ollama 等任意兼容接口的地址和 Key，不填也能正常玩完三个梦。
+
+游戏主页与源码：https://github.com/zcr2012/2D_game

@@ -1,9 +1,16 @@
 name: Build (Windows / Linux / Android)
 
-# Every push builds the game for all three platforms. Download the results
+# Every push builds the game for all three platforms; download the results
 # from the run's "Artifacts" section on the GitHub Actions page.
+#
+# Pushing a tag like v0.1.0 additionally packages the three builds and
+# publishes them as a GitHub Release (see the `release` job at the bottom).
 on:
   push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
   workflow_dispatch:
 
 env:
@@ -61,8 +68,8 @@ jobs:
             mode: --export-release
           - name: android
             preset: "Android"
-            file: DreamRepair-debug.apk
-            mode: --export-debug      # signed with the image's debug keystore
+            file: DreamRepair.apk
+            mode: --export-release
     steps:
       - uses: actions/checkout@v4
       - name: Setup templates & editor settings
@@ -70,6 +77,32 @@ jobs:
           mkdir -v -p ~/.local/share/godot/export_templates/ ~/.config/
           mv /root/.config/godot ~/.config/godot || true
           mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Configure Android signing keystore
+        if: matrix.name == 'android'
+        # NOTE: inside a container job the default shell is `sh` (dash), which
+        # does not understand `set -o pipefail`. Ask for bash explicitly.
+        shell: bash
+        run: |
+          set -eu
+          echo "HOME=${HOME:-<unset>}  keytool=$(command -v keytool || echo '<missing>')"
+          KS=""
+          for c in "${HOME:-/root}/.android/debug.keystore" /root/.android/debug.keystore /github/home/.android/debug.keystore; do
+            if [ -f "$c" ]; then KS="$c"; echo "Found existing keystore: $c"; break; fi
+          done
+          if [ -z "$KS" ]; then
+            KS="${HOME:-/root}/.android/debug.keystore"
+            mkdir -p "$(dirname "$KS")"
+            keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          echo "Signing the release APK with: $KS"
+          sed -i "s|^keystore/release=.*|keystore/release=\"$KS\"|"                 $PROJECT_PATH/export_presets.cfg
+          sed -i "s|^keystore/release_user=.*|keystore/release_user=\"androiddebugkey\"|" $PROJECT_PATH/export_presets.cfg
+          sed -i "s|^keystore/release_password=.*|keystore/release_password=\"android\"|" $PROJECT_PATH/export_presets.cfg
+          # Keep the public Android debug key in use: it needs no private CI
+          # secrets, and sideloaded updates keep working across builds.
+          grep -E "^keystore/" $PROJECT_PATH/export_presets.cfg
       - name: Export
         run: |
           mkdir -v -p build/${{ matrix.name }}
@@ -77,7 +110,128 @@ jobs:
           cd $PROJECT_PATH
           godot --headless --import || true
           godot --headless --verbose ${{ matrix.mode }} "${{ matrix.preset }}" "$EXPORT_DIR/${{ matrix.name }}/${{ matrix.file }}"
+      - name: Verify output
+        shell: bash
+        run: |
+          ls -lh "build/${{ matrix.name }}/"
+          test -s "build/${{ matrix.name }}/${{ matrix.file }}"
+      - name: Verify APK contents
+        if: matrix.name == 'android'
+        shell: bash
+        run: bash tools/check_apk.sh build/android/DreamRepair.apk
       - uses: actions/upload-artifact@v4
         with:
           name: DreamRepair-${{ matrix.name }}
           path: build/${{ matrix.name }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: export
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all exported builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: DreamRepair-*
+          path: dist
+      - name: Package downloads
+        shell: bash
+        env:
+          # 让 zip 以 UTF-8 记录《使用说明.txt》的文件名并置上 EFS 标志，
+          # 这样在 Windows 资源管理器里也不会变成乱码。
+          LANG: C.UTF-8
+          LC_ALL: C.UTF-8
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          OUT="release"
+          mkdir -p "$OUT"
+
+          package() {  # $1 = artifact dir, $2 = output name
+            rm -rf stage/DreamRepair
+            mkdir -p stage/DreamRepair
+            cp -r "dist/$1/." stage/DreamRepair/
+            cp .github/release/HOW_TO_RUN.txt "stage/DreamRepair/使用说明.txt"
+            ( cd stage && zip -qr "../$OUT/$2" DreamRepair )
+          }
+
+          package DreamRepair-windows "DreamRepair-${VERSION}-windows-x86_64.zip"
+          package DreamRepair-linux   "DreamRepair-${VERSION}-linux-x86_64.zip"
+
+          # Android ships as a plain .apk so phones can install it directly.
+          apk="$(find dist/DreamRepair-android -name '*.apk' | head -1)"
+          test -n "$apk"
+          cp "$apk" "$OUT/DreamRepair-${VERSION}-android.apk"
+
+          ls -lh "$OUT"
+      - name: Verify packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          # unzip 只接受一个压缩包，多余的参数会被当成“包内成员名”而报错退出。
+          for z in release/*.zip; do echo "== $z =="; unzip -l "$z"; done
+          python3 - <<'PY'
+          import glob, zipfile, sys
+
+          problems = []
+          for path in sorted(glob.glob("release/*.zip")):
+              with zipfile.ZipFile(path) as z:
+                  names = z.namelist()
+                  print(f"{path}: {len(names)} entries, {sum(i.file_size for i in z.infolist())//1048576} MB uncompressed")
+                  binary = [n for n in names if n.endswith((".exe", ".x86_64"))]
+                  if len(binary) != 1:
+                      problems.append(f"{path}: 期望恰好一个可执行文件，实际 {binary}")
+                  if not any(n.endswith("使用说明.txt") for n in names):
+                      problems.append(f"{path}: 缺少 使用说明.txt")
+                  # Windows 资源管理器只在 EFS（UTF-8）标志存在时才正确显示中文名。
+                  for info in z.infolist():
+                      if any(ord(c) > 127 for c in info.filename) and not info.flag_bits & 0x800:
+                          problems.append(f"{path}: {info.filename!r} 未标记 UTF-8")
+
+          for path in sorted(glob.glob("release/*.apk")):
+              with zipfile.ZipFile(path) as z:
+                  assert z.testzip() is None, f"{path} 已损坏"
+                  print(f"{path}: zip 完整，{len(z.namelist())} entries")
+
+          if problems:
+              for p in problems:
+                  print(f"::error title=package::{p}")
+              sys.exit(1)
+          print("所有发布产物校验通过")
+          PY
+      - name: Create or update the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          TITLE="梦境修复师 Dream Repair ${TAG}"
+          sed "s/{{VERSION}}/$TAG/g" .github/release/RELEASE_NOTES.md > /tmp/notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber
+            gh release edit "$TAG" --title "$TITLE" --notes-file /tmp/notes.md
+          else
+            gh release create "$TAG" release/* \
+              --title "$TITLE" \
+              --notes-file /tmp/notes.md
+          fi
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "### 发布完成 🎉"
+            echo
+            echo "版本 \`${GITHUB_REF_NAME}\`，三个平台："
+            echo
+            echo '```'
+            ls -lh release
+            echo '```'
+            echo
+            echo "下载页面：${{ github.server_url }}/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}"
+          } >> "$GITHUB_STEP_SUMMARY"
