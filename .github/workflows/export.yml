@@ -79,15 +79,19 @@ jobs:
           mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
       - name: Configure Android signing keystore
         if: matrix.name == 'android'
+        # NOTE: inside a container job the default shell is `sh` (dash), which
+        # does not understand `set -o pipefail`. Ask for bash explicitly.
+        shell: bash
         run: |
-          set -euo pipefail
+          set -eu
+          echo "HOME=${HOME:-<unset>}  keytool=$(command -v keytool || echo '<missing>')"
           KS=""
-          for c in "$HOME/.android/debug.keystore" /root/.android/debug.keystore; do
-            if [ -f "$c" ]; then KS="$c"; break; fi
+          for c in "${HOME:-/root}/.android/debug.keystore" /root/.android/debug.keystore /github/home/.android/debug.keystore; do
+            if [ -f "$c" ]; then KS="$c"; echo "Found existing keystore: $c"; break; fi
           done
           if [ -z "$KS" ]; then
-            mkdir -p "$HOME/.android"
-            KS="$HOME/.android/debug.keystore"
+            KS="${HOME:-/root}/.android/debug.keystore"
+            mkdir -p "$(dirname "$KS")"
             keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
               -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US"
@@ -131,6 +135,7 @@ jobs:
           pattern: DreamRepair-*
           path: dist
       - name: Package downloads
+        shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -155,6 +160,7 @@ jobs:
 
           ls -lh "$OUT"
       - name: Create or update the release
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -171,6 +177,7 @@ jobs:
               --notes-file /tmp/notes.md
           fi
       - name: Summary
+        shell: bash
         run: |
           {
             echo "### 发布完成 🎉"
