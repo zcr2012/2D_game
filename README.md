@@ -206,6 +206,8 @@ tools/
   process_assets.py        抠图 → 去溢色 → 自动裁切 → 缩放 → 硬边 alpha → 减色 → 立绘
   procedural_assets.py     程序化生成的小素材、预渲染地面、音乐盒 BGM、音效
   layout_preview.py        把平台测试量出的界面布局画成图，检查各种屏幕比例
+  check_apk.sh             发布前自检：APK 的架构 / 内嵌游戏数据 / 签名
+  ci_test.sh               在 CI 里跑一个无头测试场景
 ```
 
 ### 素材流程
