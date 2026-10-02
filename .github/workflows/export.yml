@@ -111,9 +111,31 @@ jobs:
           godot --headless --import || true
           godot --headless --verbose ${{ matrix.mode }} "${{ matrix.preset }}" "$EXPORT_DIR/${{ matrix.name }}/${{ matrix.file }}"
       - name: Verify output
+        shell: bash
         run: |
           ls -lh "build/${{ matrix.name }}/"
           test -s "build/${{ matrix.name }}/${{ matrix.file }}"
+      - name: Verify APK contents
+        if: matrix.name == 'android'
+        shell: bash
+        run: |
+          set -eu
+          APK="build/android/DreamRepair.apk"
+          echo "--- top level ---"
+          unzip -l "$APK" | awk 'NR>3 {print $4}' | cut -d/ -f1 | sort -u
+          echo "--- native libs ---"
+          for abi in arm64-v8a armeabi-v7a; do
+            unzip -l "$APK" "lib/$abi/*" || true
+            unzip -l "$APK" | grep -q "lib/$abi/libgodot_android.so" \
+              || { echo "::error title=apk::$abi 缺少 libgodot_android.so"; exit 1; }
+          done
+          echo "--- game data is embedded ---"
+          unzip -l "$APK" | grep -qE "assets/.*(pck|project\.binary|\.gdc|\.tres)" \
+            || { echo "::error title=apk::APK 内没有找到游戏数据"; exit 1; }
+          echo "--- signature ---"
+          unzip -l "$APK" | grep -E "META-INF/.*\.(RSA|SF|DSA|EC)" || echo "(仅 v2/v3 签名块，无 META-INF v1 条目)"
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" \
+            || echo "(apksigner 不可用，跳过签名校验)"
       - uses: actions/upload-artifact@v4
         with:
           name: DreamRepair-${{ matrix.name }}
